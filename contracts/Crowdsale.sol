@@ -1,19 +1,23 @@
 pragma solidity ^0.4.19;
 import "wings-integration/contracts/BasicCrowdsale.sol";
 import "./LetItplayToken.sol";
+import "./Whitelist.sol";
 
-contract Crowdsale is BasicCrowdsale {
+contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
 
   mapping(address => uint256) participants;
-  mapping(address => bool) whitelist;
 
   struct PresaleItem {
     uint256 eth;
     uint256 tokens;
   }
 
+
+
   mapping(address => PresaleItem) presale;
   address[] presaleAddresses;
+
+
 
   uint256 tokensPerEthPrice;
   LetItPlayToken token;
@@ -24,7 +28,7 @@ contract Crowdsale is BasicCrowdsale {
   uint256 team;
   uint256 advisers;
   uint256 bounty;
-  uint256 forSaleLeft; 
+  uint256 forSaleLeft;
 
   // Ctor. In this example, minimalGoal, hardCap, and price are not changeable.
   // In more complex cases, those parameters may be changed until start() is called.
@@ -44,27 +48,29 @@ contract Crowdsale is BasicCrowdsale {
     hardCap = _hardCap;
     tokensPerEthPrice = _tokensPerEthPrice;
     token = LetItPlayToken(_token);
-    forSale = token.totalSupply * 6 / 10;
+    uint256 totalSupply = token.totalSupply();
+    forSale = totalSupply * 6 / 10;
     forSaleLeft = forSale;
-    ecoSystemFund = token.totalSupply * 15 / 100;
-    founders = token.totalSupply * 15 / 100;
-    team = token.totalSupply * 5 / 100;
-    advisers = token.totalSupply * 3 / 100;
-    bounty = token.totalSupply * 2 / 100; 
+    ecoSystemFund = totalSupply * 15 / 100;
+    founders = totalSupply * 15 / 100;
+    team = totalSupply * 5 / 100;
+    advisers = totalSupply * 3 / 100;
+    bounty = totalSupply * 2 / 100;
 
     initPresale();
+    initBonuses();
   }
 
-  function initPresaleItem(address addr, uint256 eth, uint256 tokens){
+  function internal initPresaleItem(address addr, uint256 eth, uint256 tokens){
         presale[addr] = PresaleItem(eth, tokens);
         presaleAddresses.push(addr);
   }
 
-  function initPresale() {
-        initPresaleItem(0xa4dba833494db5a101b82736bce558c05d78479f,  1000000000000000000, 100000); 
+  function internal initPresale() {
+        initPresaleItem(0xa4dba833494db5a101b82736bce558c05d78479,  1000000000000000000, 100000);
         initPresaleItem(0xb0b5594fb4ff44ac05b2ff65aded3c78a8a6b5a5, 3000000000000000000, 100000);
         for(uint i = 0; i < presaleAddresses.length; i++){
-                PresaleItem item = presale[presaleAddresses[i]];
+                PresaleItem memory item = presale[presaleAddresses[i]];
                 forSaleLeft -= item.tokens;
                 totalCollected += item.eth;
                 totalSold += item.tokens;
@@ -107,49 +113,31 @@ contract Crowdsale is BasicCrowdsale {
     //token.release();
   }
 
-// Here go crowdsale process itself and token manipulations
-
-  // default function allows for ETH transfers to the contract
   function () payable public {
     require(msg.value > 0);
-
-    // and it sells the token
     sellTokens(msg.sender, msg.value);
   }
 
-  // sels the project's token to buyers
   function sellTokens(address _recepient, uint256 _value)
     internal
-    hasBeenStarted()     // crowdsale started
-    hasntStopped()       // wasn't cancelled by owner
-    whenCrowdsaleAlive() // in active state
+    hasBeenStarted()
+    hasntStopped()
+    whenCrowdsaleAlive()
+    whitelistedOnly()
   {
     uint256 newTotalCollected = totalCollected + _value;
 
     if (hardCap < newTotalCollected) {
-      // don't sell anything above the hard cap
-
       uint256 refund = newTotalCollected - hardCap;
       uint256 diff = _value - refund;
-
-      // send the ETH part which exceeds the hard cap back to the buyer
       _recepient.transfer(refund);
       _value = diff;
     }
 
-    // token amount as per price (fixed in this example)
     uint256 tokensSold = _value * tokensPerEthPrice;
-
-    // create new tokens for this buyer
     token.transferByAdmin(address(token), _recepient, tokensSold);
-
-    // remember the buyer so he/she/it may refund its ETH if crowdsale failed
     participants[_recepient] += _value;
-
-    // update total ETH collected
     totalCollected += _value;
-
-    // update totel tokens sold
     totalSold += tokensSold;
   }
 

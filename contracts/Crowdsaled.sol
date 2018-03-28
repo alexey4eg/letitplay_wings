@@ -16,9 +16,7 @@ contract Crowdsaled is Ownable, StandardToken {
           _;
         }
 
-        function SetCrowdsale(address crowdsale) onlyOwner {
+        function setCrowdsale(address crowdsale) onlyOwner {
                 crowdsaleContract = crowdsale;
         }
 }
-
-
