@@ -1,0 +1,4 @@
+#!c:\users\alexey\appdata\local\programs\python\python36-32\python.exe
+import flattener.core
+
+flattener.core.main()

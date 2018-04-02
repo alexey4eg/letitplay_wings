@@ -1,0 +1,17 @@
+pragma solidity ^0.4.19;
+import "../contracts/LetItPlayToken.sol";
+import "truffle/Assert.sol";
+import "truffle/DeployedAddresses.sol";
+
+contract TestLetItPlayToken {
+    function testTotalSupply(){
+      LetItPlayToken token = LetItPlayToken(DeployedAddresses.LetItPlayToken());
+      uint expected = 1000000000;
+      Assert.equal(token.balanceOf(address(token)), expected, "fail");
+    }
+
+    function testTransferByAdmin() {
+      LetItPlayToken token = LetItPlayToken(DeployedAddresses.LetItplayToken());
+      Assert.equal(token.owner == address(accounts[0]));
+    }
+}

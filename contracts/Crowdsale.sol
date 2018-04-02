@@ -1,6 +1,7 @@
 pragma solidity ^0.4.19;
 import "wings-integration/contracts/BasicCrowdsale.sol";
 import "./LetItplayToken.sol";
+import "./WithBonusPeriods.sol";
 import "./Whitelist.sol";
 
 contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
@@ -11,8 +12,6 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     uint256 eth;
     uint256 tokens;
   }
-
-
 
   mapping(address => PresaleItem) presale;
   address[] presaleAddresses;
@@ -61,14 +60,14 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     initBonuses();
   }
 
-  function internal initPresaleItem(address addr, uint256 eth, uint256 tokens){
+  function initPresaleItem(address addr, uint256 eth, uint256 tokens) internal{
         presale[addr] = PresaleItem(eth, tokens);
         presaleAddresses.push(addr);
   }
 
-  function internal initPresale() {
-        initPresaleItem(0xa4dba833494db5a101b82736bce558c05d78479,  1000000000000000000, 100000);
-        initPresaleItem(0xb0b5594fb4ff44ac05b2ff65aded3c78a8a6b5a5, 3000000000000000000, 100000);
+  function initPresale() internal {
+        initPresaleItem(0xa4dba833494db5a101b82736bce558c05d78479,  1, 10);
+        initPresaleItem(0xb0b5594fb4ff44ac05b2ff65aded3c78a8a6b5a5, 3, 30);
         for(uint i = 0; i < presaleAddresses.length; i++){
                 PresaleItem memory item = presale[presaleAddresses[i]];
                 forSaleLeft -= item.tokens;
@@ -134,7 +133,11 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
       _value = diff;
     }
 
-    uint256 tokensSold = _value * tokensPerEthPrice;
+    uint256 tokensSold = _value / tokensPerEthPrice;
+    updateCurrentBonusPeriod();
+    if (currentBonusPeriod.fromTimestamp != INVALID_FROM_TIMESTAMP)
+      tokensSold += tokensSold * currentBonusPeriod.bonusNumerator / currentBonusPeriod.bonusDenominator;
+
     token.transferByAdmin(address(token), _recepient, tokensSold);
     participants[_recepient] += _value;
     totalCollected += _value;
