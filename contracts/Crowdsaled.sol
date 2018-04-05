@@ -1,7 +1,6 @@
 pragma solidity ^0.4.19;
-import "zeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
-contract Crowdsaled is Ownable, StandardToken {
+contract Crowdsaled is Ownable {
         address public crowdsaleContract = address(0);
         function Crowdsaled(){
         }
@@ -16,7 +15,7 @@ contract Crowdsaled is Ownable, StandardToken {
           _;
         }
 
-        function setCrowdsale(address crowdsale) onlyOwner {
+        function setCrowdsale(address crowdsale) onlyOwner() {
                 crowdsaleContract = crowdsale;
         }
 }

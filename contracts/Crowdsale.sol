@@ -1,40 +1,28 @@
 pragma solidity ^0.4.19;
 import "wings-integration/contracts/BasicCrowdsale.sol";
-import "./LetItplayToken.sol";
+import "./LetItPlayToken.sol";
 import "./WithBonusPeriods.sol";
 import "./Whitelist.sol";
 
 contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
 
-  mapping(address => uint256) participants;
 
-  struct PresaleItem {
-    uint256 eth;
-    uint256 tokens;
+  struct Investor {
+    uint256 weiDonated;
+    uint256 tokensGiven;
   }
 
-  mapping(address => PresaleItem) presale;
-  address[] presaleAddresses;
+  mapping(address => Investor) participants;
 
-
-
-  uint256 tokensPerEthPrice;
+  uint256 tokenRateWei;
   LetItPlayToken token;
-
-  uint256 forSale;
-  uint256 ecoSystemFund;
-  uint256 founders;
-  uint256 team;
-  uint256 advisers;
-  uint256 bounty;
-  uint256 forSaleLeft;
 
   // Ctor. In this example, minimalGoal, hardCap, and price are not changeable.
   // In more complex cases, those parameters may be changed until start() is called.
   function Crowdsale(
     uint256 _minimalGoal,
     uint256 _hardCap,
-    uint256 _tokensPerEthPrice,
+    uint256 _tokenRateWei,
     address _token
   )
     public
@@ -45,35 +33,20 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     // just setup them once...
     minimalGoal = _minimalGoal;
     hardCap = _hardCap;
-    tokensPerEthPrice = _tokensPerEthPrice;
+    tokenRateWei = _tokenRateWei;
     token = LetItPlayToken(_token);
-    uint256 totalSupply = token.totalSupply();
-    forSale = totalSupply * 6 / 10;
-    forSaleLeft = forSale;
-    ecoSystemFund = totalSupply * 15 / 100;
-    founders = totalSupply * 15 / 100;
-    team = totalSupply * 5 / 100;
-    advisers = totalSupply * 3 / 100;
-    bounty = totalSupply * 2 / 100;
-
     initPresale();
-    initBonuses();
   }
 
   function initPresaleItem(address addr, uint256 eth, uint256 tokens) internal{
-        presale[addr] = PresaleItem(eth, tokens);
-        presaleAddresses.push(addr);
+        Investor memory investor = Investor(eth, tokens);
+        participants[addr] = investor;
+        token.transferByCrowdsale(addr, tokens);
   }
 
   function initPresale() internal {
         initPresaleItem(0xa4dba833494db5a101b82736bce558c05d78479,  1, 10);
         initPresaleItem(0xb0b5594fb4ff44ac05b2ff65aded3c78a8a6b5a5, 3, 30);
-        for(uint i = 0; i < presaleAddresses.length; i++){
-                PresaleItem memory item = presale[presaleAddresses[i]];
-                forSaleLeft -= item.tokens;
-                totalCollected += item.eth;
-                totalSold += item.tokens;
-        }
   }
 
 // Here goes ICrowdsaleProcessor implementation
@@ -97,8 +70,7 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     onlyManager() // manager is CrowdsaleController instance
   {
     // crowdsale token is mintable in this example, tokens are created here
-    forSaleLeft -= _amount;
-    token.transferByAdmin(address(token), _contract, _amount);
+    token.transferByCrowdsale(_contract, _amount);
   }
 
   // transfers crowdsale token from mintable to transferrable state
@@ -109,7 +81,7 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     whenCrowdsaleSuccessful() // crowdsale was successful
   {
     // see token example
-    //token.release();
+    token.releaseForTransfer();
   }
 
   function () payable public {
@@ -133,43 +105,45 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
       _value = diff;
     }
 
-    uint256 tokensSold = _value / tokensPerEthPrice;
+    uint256 tokensSold = _value / tokenRateWei;
     updateCurrentBonusPeriod();
     if (currentBonusPeriod.fromTimestamp != INVALID_FROM_TIMESTAMP)
       tokensSold += tokensSold * currentBonusPeriod.bonusNumerator / currentBonusPeriod.bonusDenominator;
 
-    token.transferByAdmin(address(token), _recepient, tokensSold);
-    participants[_recepient] += _value;
+    token.transferByCrowdsale(_recepient, tokensSold);
+    participants[_recepient].weiDonated += _value;
+    participants[_recepient].tokensGiven += tokensSold;
     totalCollected += _value;
     totalSold += tokensSold;
   }
 
   // project's owner withdraws ETH funds to the funding address upon successful crowdsale
-  function withdraw(
-    uint256 _amount // can be done partially
-  )
-    public
+  function withdraw(uint256 _amount) public // can be done partially
     onlyOwner() // project's owner
     hasntStopped()  // crowdsale wasn't cancelled
     whenCrowdsaleSuccessful() // crowdsale completed successfully
   {
-    require(_amount <= this.balance);
+    require(_amount <= address(this).balance);
     fundingAddress.transfer(_amount);
   }
 
   // backers refund their ETH if the crowdsale was cancelled or has failed
-  function refund()
-    public
+  function refund() public
   {
     // either cancelled or failed
     require(stopped || isFailed());
 
-    uint256 amount = participants[msg.sender];
+    uint256 weiDonated = participants[msg.sender].weiDonated;
+    uint256 tokens = participants[msg.sender].tokensGiven;
 
     // prevent from doing it twice
-    require(amount > 0);
-    participants[msg.sender] = 0;
+    require(weiDonated > 0);
+    participants[msg.sender].weiDonated = 0;
+    participants[msg.sender].tokensGiven = 0;
 
-    msg.sender.transfer(amount);
+    msg.sender.transfer(weiDonated);
+
+    //this must be approved by investor
+    token.transferFrom(msg.sender, token.forSale(), tokens);
   }
 }

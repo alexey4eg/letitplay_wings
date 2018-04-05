@@ -2,6 +2,7 @@ pragma solidity ^0.4.19;
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract WithBonusPeriods is Ownable {
+  event DEBUG(uint256 code);
   uint256 constant INVALID_FROM_TIMESTAMP = 1000000000000;
   uint256 constant INFINITY_TO_TIMESTAMP= 1000000000000;
   struct BonusPeriod {
@@ -18,23 +19,19 @@ contract WithBonusPeriods is Ownable {
       initBonuses();
   }
 
-  function isBonusPeriodNow() public view returns (bool) {
-    for(uint i = 0; i < bonusPeriods.length; i++)
-      if (bonusPeriods[i].fromTimestamp <= block.timestamp && bonusPeriods[i].toTimestamp >= block.timestamp)
-        return true;
-    return false;
+  function BonusPeriodsCount() public view returns (uint8) {
+    return uint8(bonusPeriods.length);
   }
 
-  function CurrentBonusPeriod() public view returns (uint256 from, uint256 to, uint256 num, uint256 den) {
-    require(isBonusPeriodNow());
+  function BonusPeriodFor(uint256 timestamp) public view returns (bool ongoing, uint256 from, uint256 to, uint256 num, uint256 den) {
     for(uint i = 0; i < bonusPeriods.length; i++)
-      if (bonusPeriods[i].fromTimestamp <= block.timestamp && bonusPeriods[i].toTimestamp >= block.timestamp)
-        return (bonusPeriods[i].fromTimestamp, bonusPeriods[i].toTimestamp, bonusPeriods[i].bonusNumerator,
+      if (bonusPeriods[i].fromTimestamp <= timestamp && bonusPeriods[i].toTimestamp >= timestamp)
+        return (true, bonusPeriods[i].fromTimestamp, bonusPeriods[i].toTimestamp, bonusPeriods[i].bonusNumerator,
           bonusPeriods[i].bonusDenominator);
-    revert();
+    return (false, 0, 0, 0, 0);
   }
 
-  function removeBonusPeriod(uint index) public onlyOwner {
+  /*function removeBonusPeriod(uint index) public onlyOwner {
     require(index >=0 && bonusPeriods.length > index);
     for(uint i = index + 1; i < bonusPeriods.length; i++)
       bonusPeriods[i - 1] = bonusPeriods[i];
@@ -44,9 +41,10 @@ contract WithBonusPeriods is Ownable {
   function addBonusPeriod(uint256 fromTimestamp, uint256 toTimestamp, uint bonusNumerator, uint bonusDenominator) public onlyOwner {
       require(fromTimestamp <= toTimestamp);
       require(bonusNumerator >= 0 && bonusDenominator > 0);
+      require(bonusPeriods.length < 255);
 
       bonusPeriods.push(BonusPeriod(fromTimestamp, toTimestamp, bonusNumerator, bonusDenominator));
-  }
+  }*/
 
   function initBonusPeriod(uint256 from, uint256 to, uint256 num, uint256 den) internal  {
     bonusPeriods.push(BonusPeriod(from, to, num, den));
