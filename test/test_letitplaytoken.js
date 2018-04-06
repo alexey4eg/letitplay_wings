@@ -1,5 +1,6 @@
 import expectThrow from "zeppelin-solidity/test/helpers/expectThrow.js";
 const FOR_SALE = 600000000;
+const TEAM = 50000000;
 
 var LetItPlayToken = artifacts.require("./LetItPlayToken.sol");
 contract("LetItPlayToken", function(accounts) {
@@ -65,5 +66,21 @@ contract("LetItPlayToken", function(accounts) {
 
       await expectThrow(token.transferByOwner(forSale, user, 100, {from:user}));
       await expectThrow(token.transferByOwner(forSale, user, 100, {from:crowdsale}));
+    });
+
+    it("release", async function() {
+      await token.setCrowdsale(crowdsale);
+      await token.transferByOwner(forSale, user, 100);
+      await token.approve(user, 150, {from:founders});
+      await expectThrow(token.transfer(team, 50, {from:user}));
+      await expectThrow(token.transferFrom(founders, team, 150, {from:user}));
+      await expectThrow(token.releaseForTransfer({from:user}));
+      await token.releaseForTransfer({from:crowdsale});
+      await token.transfer(team, 50, {from:user});
+      let balance = await token.balanceOf(user);
+      assert.equal(50, balance.toNumber());
+      await token.transferFrom(founders, team, 150, {from:user});
+      balance = await token.balanceOf(team);
+      assert.equal(200 + TEAM, balance.toNumber());
     });
 });

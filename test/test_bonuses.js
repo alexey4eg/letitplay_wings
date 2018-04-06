@@ -29,7 +29,7 @@ contract("Crowdsale", async function(accounts) {
 
   beforeEach('setup contract for each test', async function () {
       now = Math.floor(Date.now() / 1000);
-      token = await LetItPlayToken.new();
+      token = await LetItPlayToken.new(accounts[4], accounts[5], accounts[6], accounts[7], accounts[8], accounts[9]);
       crowdsale = await Crowdsale.new(MINIMAL_GOAL, HARD_CAP, TOKEN_PRICE, token.address);
       user = accounts[2];
     });
@@ -67,7 +67,7 @@ contract("Crowdsale", async function(accounts) {
     assert.equal(10, bonus[3]);
   });*/
 
-  it("remove bonus period", async function() {
+  /*it("remove bonus period", async function() {
     let from1 = now + 1234, to1 = now + 3456, num1 = 1, den1 = 10;
     let from2 = now + 4789, to2 = now + 5555, num2 = 3, den2 = 10;
     await crowdsale.addBonusPeriod(from1, to1, num1, den1);
@@ -87,6 +87,6 @@ contract("Crowdsale", async function(accounts) {
     assert.equal(now + 5555, bonus[2].toNumber());
     assert.equal(3, bonus[3].toNumber());
     assert.equal(10, bonus[4].toNumber());
-  });
+  });*/
 
 });
