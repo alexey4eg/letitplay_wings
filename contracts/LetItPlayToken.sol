@@ -8,20 +8,32 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
         uint8 public decimals;
 
         address public forSale;
-        address ecoSystemFund;
-        address founders;
-        address team;
-        address advisers;
-        address bounty;
-        address forSaleLeft;
+        address public ecoSystemFund;
+        address public founders;
+        address public team;
+        address public advisers;
+        address public bounty;
 
         bool releasedForTransfer;
 
-        function LetItPlayToken() public {
+        function LetItPlayToken(
+            address _forSale,
+            address _ecoSystemFund,
+            address _founders,
+            address _team,
+            address _advisers,
+            address _bounty
+          ) public {
           name = "LetItPlayToken";
           symbol = "LTP";
           decimals = 18;
           totalSupply = 1000000000;
+          forSale = _forSale;
+          ecoSystemFund = _ecoSystemFund;
+          founders = _founders;
+          team = _team;
+          advisers = _advisers;
+          bounty = _bounty;
 
           balances[forSale] = totalSupply * 60 / 100;
           balances[ecoSystemFund] = totalSupply * 15 / 100;

@@ -6,7 +6,6 @@ import "./Whitelist.sol";
 
 contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
 
-
   struct Investor {
     uint256 weiDonated;
     uint256 tokensGiven;
@@ -35,16 +34,15 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     hardCap = _hardCap;
     tokenRateWei = _tokenRateWei;
     token = LetItPlayToken(_token);
-    initPresale();
   }
 
   function initPresaleItem(address addr, uint256 eth, uint256 tokens) internal{
-        Investor memory investor = Investor(eth, tokens);
-        participants[addr] = investor;
+        participants[addr].weiDonated += eth;
+        participants[addr].tokensGiven += tokens;
         token.transferByCrowdsale(addr, tokens);
   }
 
-  function initPresale() internal {
+  function initPresale() public onlyOwner() {
         initPresaleItem(0xa4dba833494db5a101b82736bce558c05d78479,  1, 10);
         initPresaleItem(0xb0b5594fb4ff44ac05b2ff65aded3c78a8a6b5a5, 3, 30);
   }

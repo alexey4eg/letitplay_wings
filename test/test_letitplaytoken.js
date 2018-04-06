@@ -1,41 +1,69 @@
 import expectThrow from "zeppelin-solidity/test/helpers/expectThrow.js";
+const FOR_SALE = 600000000;
 
 var LetItPlayToken = artifacts.require("./LetItPlayToken.sol");
 contract("LetItPlayToken", function(accounts) {
   var crowdsale = accounts[1];
-  var user = accounts[2];
 
-  it("initial supply = 1000000000", function() {
-    return LetItPlayToken.deployed().then(async function(instance) {
-      var balance = await instance.balanceOf(LetItPlayToken.address);
-      assert.equal(balance, 1000000000, "wrong initial supply");
-    });
+  var user = accounts[2];
+  let forSale = accounts[4];
+  let eco = accounts[5];
+  let founders = accounts[6];
+  let team = accounts[7];
+  let advisers = accounts[8];
+  let bounty = accounts[9];
+  let token;
+
+  beforeEach('setup contract for each test', async function () {
+    token = await LetItPlayToken.new(forSale, eco, founders, team, advisers, bounty);
+  });
+
+  it("initial distribution", async function() {
+      var balance = await token.balanceOf(forSale);
+      assert.equal(FOR_SALE, balance, "wrong for sale");
+      balance = await token.balanceOf(eco);
+      assert.equal(150000000, balance, "wrong for eco");
+      balance = await token.balanceOf(founders);
+      assert.equal(150000000, balance, "wrong for founders");
+      balance = await token.balanceOf(team);
+      assert.equal(50000000, balance, "wrong for team");
+      balance = await token.balanceOf(advisers);
+      assert.equal(30000000, balance, "wrong for advisers");
+      balance = await token.balanceOf(bounty);
+      assert.equal(20000000, balance, "wrong for bounty");
   });
 
   it("setCrowdsale", async function() {
-    var instance = await LetItPlayToken.deployed();
+    await expectThrow(token.setCrowdsale(user, {from:user}));
 
-    await expectThrow(instance.setCrowdsale(user, {from:user}));
-
-    await instance.setCrowdsale(crowdsale);
-    var instanceCrowdsale = await instance.crowdsaleContract();
+    await token.setCrowdsale(crowdsale);
+    var instanceCrowdsale = await token.crowdsaleContract();
     assert.equal(crowdsale, instanceCrowdsale);
 
-    await expectThrow(instance.setCrowdsale(user, {from:crowdsale}));
+    await expectThrow(token.setCrowdsale(user, {from:crowdsale}));
   });
 
-  it("transferByAdmin", function() {
-    return LetItPlayToken.deployed().then(async function(instance) {
-      await instance.setCrowdsale(crowdsale);
-      await instance.transferByAdmin(instance.address, user, 100);
-      var balance = await instance.balanceOf(user);
+  it("transferByCrowdsale", async function() {
+      await token.setCrowdsale(crowdsale);
+      await token.transferByCrowdsale(user, 100, {from:crowdsale});
+      let balance = await token.balanceOf(user);
       assert.equal(100, balance);
+      balance = await token.balanceOf(forSale);
+      assert.equal(FOR_SALE - 100, balance);
 
-      await instance.transferByAdmin(instance.address, user, 100, {from:crowdsale});
-      var balance = await instance.balanceOf(user);
-      assert.equal(200, balance);
-
-      await expectThrow(instance.transferByAdmin(instance.address, user, 100, {from:user}));
-    });
+      await expectThrow(token.transferByCrowdsale(user, 100, {from:user}));
+      await expectThrow(token.transferByCrowdsale(user, 100));
   });
+
+  it("transferByOwner", async function() {
+      await token.setCrowdsale(crowdsale);
+      await token.transferByOwner(forSale, user, 100);
+      let balance = await token.balanceOf(user);
+      assert.equal(100, balance);
+      balance = await token.balanceOf(forSale);
+      assert.equal(FOR_SALE - 100, balance);
+
+      await expectThrow(token.transferByOwner(forSale, user, 100, {from:user}));
+      await expectThrow(token.transferByOwner(forSale, user, 100, {from:crowdsale}));
+    });
 });
