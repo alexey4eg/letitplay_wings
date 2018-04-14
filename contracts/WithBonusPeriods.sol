@@ -31,7 +31,7 @@ contract WithBonusPeriods is Ownable {
     return (false, 0, 0, 0, 0);
   }
 
-  function removeBonusPeriod(uint index) public onlyOwner {
+  /*function removeBonusPeriod(uint index) public onlyOwner {
     require(index >=0 && bonusPeriods.length > index);
     for(uint i = index + 1; i < bonusPeriods.length; i++)
       bonusPeriods[i - 1] = bonusPeriods[i];
@@ -44,12 +44,13 @@ contract WithBonusPeriods is Ownable {
       require(bonusPeriods.length < 255);
 
       bonusPeriods.push(BonusPeriod(fromTimestamp, toTimestamp, bonusNumerator, bonusDenominator));
-  }
+  }*/
 
   function initBonusPeriod(uint256 from, uint256 to, uint256 num, uint256 den) internal  {
     bonusPeriods.push(BonusPeriod(from, to, num, den));
   }
 
+  //will be replaced with real bonus periods
   function initBonuses() internal {
       initBonusPeriod(block.timestamp, block.timestamp + 3600 * 24, 3, 10);
       initBonusPeriod(block.timestamp + 3600 * 24 + 1, block.timestamp + 3600 * 48, 1, 10);
