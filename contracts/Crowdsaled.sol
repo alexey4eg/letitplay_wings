@@ -2,7 +2,7 @@ pragma solidity ^0.4.19;
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 contract Crowdsaled is Ownable {
         address public crowdsaleContract = address(0);
-        function Crowdsaled(){
+        function Crowdsaled() public {
         }
 
         modifier onlyCrowdsale{
@@ -15,7 +15,7 @@ contract Crowdsaled is Ownable {
           _;
         }
 
-        function setCrowdsale(address crowdsale) onlyOwner() {
+        function setCrowdsale(address crowdsale) public onlyOwner() {
                 crowdsaleContract = crowdsale;
         }
 }

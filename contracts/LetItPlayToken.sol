@@ -8,6 +8,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
         uint8 public decimals;
 
         address public forSale;
+        address public preSale;
         address public ecoSystemFund;
         address public founders;
         address public team;
@@ -22,10 +23,12 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
             address _founders,
             address _team,
             address _advisers,
-            address _bounty
+            address _bounty,
+            address _preSale,
+            uint256 _preSaleTokens
           ) public {
           name = "LetItPlayToken";
-          symbol = "LTP";
+          symbol = "PLAY";
           decimals = 18;
           totalSupply = 1000000000;
           forSale = _forSale;
@@ -34,8 +37,12 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           team = _team;
           advisers = _advisers;
           bounty = _bounty;
+          preSale = _preSale;
 
-          balances[forSale] = totalSupply * 60 / 100;
+          uint256 forSaleTokens = totalSupply * 60 / 100;
+
+          balances[forSale] = forSaleTokens - _preSaleTokens;
+          balances[preSale] = _preSaleTokens;
           balances[ecoSystemFund] = totalSupply * 15 / 100;
           balances[founders] = totalSupply * 15 / 100;
           balances[team] = totalSupply * 5 / 100;
@@ -47,14 +54,18 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           require(balances[from] >= value);
           balances[from] = balances[from].sub(value);
           balances[to] = balances[to].add(value);
-          Transfer(from, to, value);
+          emit Transfer(from, to, value);
         }
 
         function transferByCrowdsale(address to, uint256 value) public onlyCrowdsale {
           require(balances[forSale] >= value);
           balances[forSale] = balances[forSale].sub(value);
           balances[to] = balances[to].add(value);
-          Transfer(forSale, to, value);
+          emit Transfer(forSale, to, value);
+        }
+
+        function transferFromByCrowdsale(address _from, address _to, uint256 _value) public onlyCrowdsale returns (bool) {
+            return super.transferFrom(_from, _to, _value);
         }
 
         function releaseForTransfer() public onlyCrowdsaleOrOwner {

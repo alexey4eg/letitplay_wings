@@ -36,7 +36,7 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     token = LetItPlayToken(_token);
   }
 
-  function initPresaleItem(address addr, uint256 eth, uint256 tokens) internal{
+  /*function initPresaleItem(address addr, uint256 eth, uint256 tokens) internal{
         participants[addr].weiDonated += eth;
         participants[addr].tokensGiven += tokens;
         token.transferByCrowdsale(addr, tokens);
@@ -45,7 +45,7 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
   function initPresale() public onlyOwner() {
         initPresaleItem(0xa4dba833494db5a101b82736bce558c05d78479,  1, 10);
         initPresaleItem(0xb0b5594fb4ff44ac05b2ff65aded3c78a8a6b5a5, 3, 30);
-  }
+  }*/
 
 // Here goes ICrowdsaleProcessor implementation
 
@@ -136,12 +136,13 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
 
     // prevent from doing it twice
     require(weiDonated > 0);
+    //DEBUG(weiDonated);
     participants[msg.sender].weiDonated = 0;
     participants[msg.sender].tokensGiven = 0;
 
     msg.sender.transfer(weiDonated);
 
     //this must be approved by investor
-    token.transferFrom(msg.sender, token.forSale(), tokens);
+    token.transferFromByCrowdsale(msg.sender, token.forSale(), tokens);
   }
 }
