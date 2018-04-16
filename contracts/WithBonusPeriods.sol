@@ -50,8 +50,8 @@ contract WithBonusPeriods is Ownable {
     bonusPeriods.push(BonusPeriod(from, to, num, den));
   }
 
-  //will be replaced with real bonus periods
   function initBonuses() internal {
+    //test bonuses, real ones will be added later here
       initBonusPeriod(block.timestamp, block.timestamp + 3600 * 24, 3, 10);
       initBonusPeriod(block.timestamp + 3600 * 24 + 1, block.timestamp + 3600 * 48, 1, 10);
   }

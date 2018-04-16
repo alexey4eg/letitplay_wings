@@ -1,7 +1,8 @@
 import expectThrow from "zeppelin-solidity/test/helpers/expectThrow.js";
-const MINIMAL_GOAL = 1000
-const HARD_CAP = 2000
-const TOKEN_PRICE = 2
+const MINIMAL_GOAL = 1000;
+const HARD_CAP = 2000;
+const TOKEN_PRICE = 2;
+const PRESALE_TOKENS = 100000;
 
 let LetItPlayToken = artifacts.require("./LetItPlayToken.sol");
 let Crowdsale = artifacts.require("./Crowdsale.sol");
@@ -29,7 +30,7 @@ contract("Crowdsale", async function(accounts) {
 
   beforeEach('setup contract for each test', async function () {
       now = Math.floor(Date.now() / 1000);
-      token = await LetItPlayToken.new(accounts[4], accounts[5], accounts[6], accounts[7], accounts[8], accounts[9]);
+      token = await LetItPlayToken.new(accounts[4], accounts[5], accounts[6], accounts[7], accounts[8], accounts[9], accounts[0], PRESALE_TOKENS);
       crowdsale = await Crowdsale.new(MINIMAL_GOAL, HARD_CAP, TOKEN_PRICE, token.address);
       user = accounts[2];
     });

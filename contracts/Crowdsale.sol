@@ -13,8 +13,8 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
 
   mapping(address => Investor) participants;
 
-  uint256 tokenRateWei;
-  LetItPlayToken token;
+  uint256 public tokenRateWei;
+  LetItPlayToken public token;
 
   // Ctor. In this example, minimalGoal, hardCap, and price are not changeable.
   // In more complex cases, those parameters may be changed until start() is called.

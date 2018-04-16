@@ -29,7 +29,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           ) public {
           name = "LetItPlayToken";
           symbol = "PLAY";
-          decimals = 18;
+          decimals = 0;
           totalSupply = 1000000000;
           forSale = _forSale;
           ecoSystemFund = _ecoSystemFund;

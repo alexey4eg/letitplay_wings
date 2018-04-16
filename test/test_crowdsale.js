@@ -2,6 +2,8 @@ import expectThrow from "zeppelin-solidity/test/helpers/expectThrow.js";
 let MINIMAL_GOAL = web3.toWei(1, 'ether');
 let HARD_CAP =     web3.toWei(2, 'ether');
 const TOKEN_PRICE = web3.toWei(1, 'finney');
+const PRESALE_TOKENS = 100000;
+const COMMISSION_EPS = 0.01;
 
 let LetItPlayToken = artifacts.require("./LetItPlayToken.sol");
 let Crowdsale = artifacts.require("./Crowdsale.sol");
@@ -37,14 +39,14 @@ contract("Crowdsale", async function(accounts) {
   }
 
   beforeEach('setup contract for each test', async function () {
-      token = await LetItPlayToken.new(forSale, accounts[5], accounts[6], accounts[7], accounts[8], accounts[9]);
+      token = await LetItPlayToken.new(forSale, accounts[5], accounts[6], accounts[7], accounts[8], accounts[9], accounts[0], PRESALE_TOKENS);
       crowdsale = await Crowdsale.new(MINIMAL_GOAL, HARD_CAP, TOKEN_PRICE, token.address);
       token.setCrowdsale(crowdsale.address);
       user = accounts[2];
       currenttime = web3.eth.getBlock('latest').timestamp;
     });
 
-/*  it("initialization check", async function() {
+  it("initialization check", async function() {
     let minGoal = await crowdsale.minimalGoal();
     assert.equal(minGoal, MINIMAL_GOAL);
     let hardCap = await crowdsale.hardCap();
@@ -92,7 +94,7 @@ contract("Crowdsale", async function(accounts) {
     await init_wl_and_donate(MINIMAL_GOAL/2);
     timeTravel(3600 * 24 * 15 + 2);
     await expectThrow(crowdsale.withdraw(web3.eth.getBalance(crowdsale.address)));
-  });*/
+  });
 
   it("refund", async function() {
       await init_wl_and_donate(MINIMAL_GOAL/2);
@@ -104,10 +106,12 @@ contract("Crowdsale", async function(accounts) {
       console.log("before refund ", beforeRefund.toNumber());
       await crowdsale.refund({from:user});
       var ethAfter = web3.eth.getBalance(user);
-      assert.equal(MINIMAL_GOAL/2, ethAfter.toNumber() - ethBef.toNumber());
+      let err = Math.abs(MINIMAL_GOAL/2 - (ethAfter.toNumber() - ethBef.toNumber())) / web3.toWei(1, 'ether');
+      console.log("err ", err);
+      assert.equal(true, err < COMMISSION_EPS);
       balance = await token.balanceOf(user);
-      assert.equal(0, balance);
+      assert.equal(0, balance.toNumber());
       balance = await token.balanceOf(forSale);
-      assert.equal(600000000, balance);
+      assert.equal(600000000-PRESALE_TOKENS, balance.toNumber());
   });
 });
