@@ -1,1 +1,3 @@
 solidity_flattener --solc-paths="zeppelin-solidity=/home/alexey/letitplay/smartContracts/node_modules/zeppelin-solidity" --output 'flat/LetItPlayToken.sol' contracts/LetItPlayToken.sol
+
+solidity_flattener --solc-paths="zeppelin-solidity=/home/alexey/letitplay/smartContracts/node_modules/zeppelin-solidity wings-integration=/home/alexey/letitplay/smartContracts/node_modules/wings-integration" --output 'flat/Crowdsale.sol' contracts/Crowdsale.sol

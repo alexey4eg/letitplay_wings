@@ -103,7 +103,7 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
       _value = diff;
     }
 
-    uint256 tokensSold = _value / tokenRateWei;
+    uint256 tokensSold = _value * uint256(10)**token.decimals() / tokenRateWei;
     updateCurrentBonusPeriod();
     if (currentBonusPeriod.fromTimestamp != INVALID_FROM_TIMESTAMP)
       tokensSold += tokensSold * currentBonusPeriod.bonusNumerator / currentBonusPeriod.bonusDenominator;

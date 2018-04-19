@@ -28,7 +28,7 @@ contract("Crowdsale", async function(accounts) {
   let manager = accounts[0];
   let fundingAddress = accounts[3];
   let forSale = accounts[4];
-  let currenttime;
+  let currenttime, decimals, shift;
 
   const init_wl_and_donate = async function(amount) {
     //return new Promise(()=>{})
@@ -44,6 +44,8 @@ contract("Crowdsale", async function(accounts) {
       token.setCrowdsale(crowdsale.address);
       user = accounts[2];
       currenttime = web3.eth.getBlock('latest').timestamp;
+      decimals = await token.decimals();
+      shift = Math.pow(10, decimals);
     });
 
   it("initialization check", async function() {
@@ -71,7 +73,7 @@ contract("Crowdsale", async function(accounts) {
     let ethBalance = web3.eth.getBalance(crowdsale.address).toNumber();
     let totalSold = await crowdsale.totalSold();
     let totalCollected = await crowdsale.totalCollected();
-    let givenTokens = toDonate/ TOKEN_PRICE;
+    let givenTokens = toDonate * shift/ TOKEN_PRICE;
     givenTokens += givenTokens * 3 / 10;
     assert.equal(givenTokens, balance.toNumber());
     assert.equal(toDonate, ethBalance);
@@ -112,6 +114,6 @@ contract("Crowdsale", async function(accounts) {
       balance = await token.balanceOf(user);
       assert.equal(0, balance.toNumber());
       balance = await token.balanceOf(forSale);
-      assert.equal(600000000-PRESALE_TOKENS, balance.toNumber());
+      assert.equal((600000000-PRESALE_TOKENS)*shift, balance.toNumber());
   });
 });

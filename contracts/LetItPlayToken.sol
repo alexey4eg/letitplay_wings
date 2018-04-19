@@ -17,6 +17,8 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
 
         bool releasedForTransfer;
 
+        uint256 private shift;
+
         function LetItPlayToken(
             address _forSale,
             address _ecoSystemFund,
@@ -29,8 +31,9 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           ) public {
           name = "LetItPlayToken";
           symbol = "PLAY";
-          decimals = 0;
-          totalSupply = 1000000000;
+          decimals = 8;
+          shift = uint256(10)**decimals;
+          totalSupply = 1000000000 * shift;
           forSale = _forSale;
           ecoSystemFund = _ecoSystemFund;
           founders = _founders;
@@ -40,6 +43,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           preSale = _preSale;
 
           uint256 forSaleTokens = totalSupply * 60 / 100;
+          _preSaleTokens = _preSaleTokens * shift;
 
           balances[forSale] = forSaleTokens - _preSaleTokens;
           balances[preSale] = _preSaleTokens;
