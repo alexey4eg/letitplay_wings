@@ -16,8 +16,7 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
   uint256 public tokenRateWei;
   LetItPlayToken public token;
 
-  // Ctor. In this example, minimalGoal, hardCap, and price are not changeable.
-  // In more complex cases, those parameters may be changed until start() is called.
+  // Ctor. MinimalGoal, hardCap, and price are not changeable.
   function Crowdsale(
     uint256 _minimalGoal,
     uint256 _hardCap,

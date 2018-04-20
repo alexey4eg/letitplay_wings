@@ -1,10 +1,114 @@
 pragma solidity ^0.4.13;
 
+library SafeMath {
+
+  /**
+  * @dev Multiplies two numbers, throws on overflow.
+  */
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) {
+      return 0;
+    }
+    uint256 c = a * b;
+    assert(c / a == b);
+    return c;
+  }
+
+  /**
+  * @dev Integer division of two numbers, truncating the quotient.
+  */
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    return c;
+  }
+
+  /**
+  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+  */
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+
+  /**
+  * @dev Adds two numbers, throws on overflow.
+  */
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
+contract Ownable {
+  address public owner;
+
+
+  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+
+  /**
+   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
+   * account.
+   */
+  function Ownable() public {
+    owner = msg.sender;
+  }
+
+  /**
+   * @dev Throws if called by any account other than the owner.
+   */
+  modifier onlyOwner() {
+    require(msg.sender == owner);
+    _;
+  }
+
+  /**
+   * @dev Allows the current owner to transfer control of the contract to a newOwner.
+   * @param newOwner The address to transfer ownership to.
+   */
+  function transferOwnership(address newOwner) public onlyOwner {
+    require(newOwner != address(0));
+    emit OwnershipTransferred(owner, newOwner);
+    owner = newOwner;
+  }
+
+}
+
+contract Crowdsaled is Ownable {
+        address public crowdsaleContract = address(0);
+        function Crowdsaled() public {
+        }
+
+        modifier onlyCrowdsale{
+          require(msg.sender == crowdsaleContract);
+          _;
+        }
+
+        modifier onlyCrowdsaleOrOwner {
+          require((msg.sender == crowdsaleContract) || (msg.sender == owner));
+          _;
+        }
+
+        function setCrowdsale(address crowdsale) public onlyOwner() {
+                crowdsaleContract = crowdsale;
+        }
+}
+
 contract ERC20Basic {
   function totalSupply() public view returns (uint256);
   function balanceOf(address who) public view returns (uint256);
   function transfer(address to, uint256 value) public returns (bool);
   event Transfer(address indexed from, address indexed to, uint256 value);
+}
+
+contract ERC20 is ERC20Basic {
+  function allowance(address owner, address spender) public view returns (uint256);
+  function transferFrom(address from, address to, uint256 value) public returns (bool);
+  function approve(address spender, uint256 value) public returns (bool);
+  event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 contract BasicToken is ERC20Basic {
@@ -46,55 +150,6 @@ contract BasicToken is ERC20Basic {
     return balances[_owner];
   }
 
-}
-
-contract ERC20 is ERC20Basic {
-  function allowance(address owner, address spender) public view returns (uint256);
-  function transferFrom(address from, address to, uint256 value) public returns (bool);
-  function approve(address spender, uint256 value) public returns (bool);
-  event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-library SafeMath {
-
-  /**
-  * @dev Multiplies two numbers, throws on overflow.
-  */
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    if (a == 0) {
-      return 0;
-    }
-    uint256 c = a * b;
-    assert(c / a == b);
-    return c;
-  }
-
-  /**
-  * @dev Integer division of two numbers, truncating the quotient.
-  */
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    // assert(b > 0); // Solidity automatically throws when dividing by 0
-    uint256 c = a / b;
-    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-    return c;
-  }
-
-  /**
-  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
-  */
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
-
-  /**
-  * @dev Adds two numbers, throws on overflow.
-  */
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    assert(c >= a);
-    return c;
-  }
 }
 
 contract StandardToken is ERC20, BasicToken {
@@ -185,61 +240,6 @@ contract StandardToken is ERC20, BasicToken {
 
 }
 
-contract Ownable {
-  address public owner;
-
-
-  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-
-  /**
-   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-   * account.
-   */
-  function Ownable() public {
-    owner = msg.sender;
-  }
-
-  /**
-   * @dev Throws if called by any account other than the owner.
-   */
-  modifier onlyOwner() {
-    require(msg.sender == owner);
-    _;
-  }
-
-  /**
-   * @dev Allows the current owner to transfer control of the contract to a newOwner.
-   * @param newOwner The address to transfer ownership to.
-   */
-  function transferOwnership(address newOwner) public onlyOwner {
-    require(newOwner != address(0));
-    emit OwnershipTransferred(owner, newOwner);
-    owner = newOwner;
-  }
-
-}
-
-contract Crowdsaled is Ownable {
-        address public crowdsaleContract = address(0);
-        function Crowdsaled() public {
-        }
-
-        modifier onlyCrowdsale{
-          require(msg.sender == crowdsaleContract);
-          _;
-        }
-
-        modifier onlyCrowdsaleOrOwner {
-          require((msg.sender == crowdsaleContract) || (msg.sender == owner));
-          _;
-        }
-
-        function setCrowdsale(address crowdsale) public onlyOwner() {
-                crowdsaleContract = crowdsale;
-        }
-}
-
 contract LetItPlayToken is Crowdsaled, StandardToken {
         uint256 public totalSupply;
         string public name;
@@ -259,6 +259,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
 
         uint256 private shift;
 
+        //initial coin distribution
         function LetItPlayToken(
             address _forSale,
             address _ecoSystemFund,
@@ -300,6 +301,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           emit Transfer(from, to, value);
         }
 
+        //can be called by crowdsale before token release, control over forSale portion of token supply
         function transferByCrowdsale(address to, uint256 value) public onlyCrowdsale {
           require(balances[forSale] >= value);
           balances[forSale] = balances[forSale].sub(value);
@@ -307,20 +309,24 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           emit Transfer(forSale, to, value);
         }
 
+        //can be called by crowdsale before token release, allowences is respected here
         function transferFromByCrowdsale(address _from, address _to, uint256 _value) public onlyCrowdsale returns (bool) {
             return super.transferFrom(_from, _to, _value);
         }
 
+        //after the call token is available for exchange
         function releaseForTransfer() public onlyCrowdsaleOrOwner {
           require(!releasedForTransfer);
           releasedForTransfer = true;
         }
 
+        //forbid transfer before release
         function transfer(address _to, uint256 _value) public returns (bool) {
           require(releasedForTransfer);
           return super.transfer(_to, _value);
         }
 
+        //forbid transfer before release
         function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
            require(releasedForTransfer);
            return super.transferFrom(_from, _to, _value);

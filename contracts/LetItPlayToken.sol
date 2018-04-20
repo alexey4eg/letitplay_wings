@@ -20,6 +20,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
 
         uint256 private shift;
 
+        //initial coin distribution
         function LetItPlayToken(
             address _forSale,
             address _ecoSystemFund,
@@ -61,6 +62,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           emit Transfer(from, to, value);
         }
 
+        //can be called by crowdsale before token release, control over forSale portion of token supply
         function transferByCrowdsale(address to, uint256 value) public onlyCrowdsale {
           require(balances[forSale] >= value);
           balances[forSale] = balances[forSale].sub(value);
@@ -68,20 +70,24 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           emit Transfer(forSale, to, value);
         }
 
+        //can be called by crowdsale before token release, allowences is respected here
         function transferFromByCrowdsale(address _from, address _to, uint256 _value) public onlyCrowdsale returns (bool) {
             return super.transferFrom(_from, _to, _value);
         }
 
+        //after the call token is available for exchange
         function releaseForTransfer() public onlyCrowdsaleOrOwner {
           require(!releasedForTransfer);
           releasedForTransfer = true;
         }
 
+        //forbid transfer before release
         function transfer(address _to, uint256 _value) public returns (bool) {
           require(releasedForTransfer);
           return super.transfer(_to, _value);
         }
 
+        //forbid transfer before release
         function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
            require(releasedForTransfer);
            return super.transferFrom(_from, _to, _value);
