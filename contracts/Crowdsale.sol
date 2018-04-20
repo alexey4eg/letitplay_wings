@@ -36,18 +36,7 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     token = LetItPlayToken(_token);
   }
 
-  /*function initPresaleItem(address addr, uint256 eth, uint256 tokens) internal{
-        participants[addr].weiDonated += eth;
-        participants[addr].tokensGiven += tokens;
-        token.transferByCrowdsale(addr, tokens);
-  }
-
-  function initPresale() public onlyOwner() {
-        initPresaleItem(0xa4dba833494db5a101b82736bce558c05d78479,  1, 10);
-        initPresaleItem(0xb0b5594fb4ff44ac05b2ff65aded3c78a8a6b5a5, 3, 30);
-  }*/
-
-// Here goes ICrowdsaleProcessor implementation
+  // Here goes ICrowdsaleProcessor implementation
 
   // returns address of crowdsale token. The token must be ERC20-compliant
   function getToken()
@@ -104,6 +93,8 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     }
 
     uint256 tokensSold = _value * uint256(10)**token.decimals() / tokenRateWei;
+
+    //apply bonus period
     updateCurrentBonusPeriod();
     if (currentBonusPeriod.fromTimestamp != INVALID_FROM_TIMESTAMP)
       tokensSold += tokensSold * currentBonusPeriod.bonusNumerator / currentBonusPeriod.bonusDenominator;
@@ -136,7 +127,6 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
 
     // prevent from doing it twice
     require(weiDonated > 0);
-    //DEBUG(weiDonated);
     participants[msg.sender].weiDonated = 0;
     participants[msg.sender].tokensGiven = 0;
 

@@ -30,24 +30,37 @@ contract("Crowdsale", async function(accounts) {
 
   beforeEach('setup contract for each test', async function () {
       now = Math.floor(Date.now() / 1000);
-      token = await LetItPlayToken.new(accounts[4], accounts[5], accounts[6], accounts[7], accounts[8], accounts[9], accounts[0], PRESALE_TOKENS);
+      token = await LetItPlayToken.new(accounts[4], accounts[5], accounts[6], accounts[7], accounts[8], accounts[9], accounts[0], accounts[1]);
       crowdsale = await Crowdsale.new(MINIMAL_GOAL, HARD_CAP, TOKEN_PRICE, token.address);
       user = accounts[2];
     });
 
   it("init bonus", async function() {
-    let period = await crowdsale.bonusPeriods(0);
-    console.log(period);
-    console.log(now + 3);
-    let bonusPeriod = await crowdsale.BonusPeriodFor(now + 3);
-    let bonusPeriodsCount = await crowdsale.BonusPeriodsCount();
+    let bonusPeriod = await crowdsale.BonusPeriodFor(1525305599);
     assert.equal(true, bonusPeriod[0]);
-    assert.equal(2, bonusPeriodsCount);
+    assert.equal(20, bonusPeriod[3].toNumber());
+    assert.equal(100, bonusPeriod[4].toNumber());
 
-    //await timeTravel(240);
+    bonusPeriod = await crowdsale.BonusPeriodFor(1525910399);
+    assert.equal(true, bonusPeriod[0]);
+    assert.equal(15, bonusPeriod[3].toNumber());
+    assert.equal(100, bonusPeriod[4].toNumber());
 
-    bonusPeriod = await crowdsale.BonusPeriodFor(now + 241);
+    bonusPeriod = await crowdsale.BonusPeriodFor(1526342400);
+    assert.equal(true, bonusPeriod[0]);
+    assert.equal(10, bonusPeriod[3].toNumber());
+    assert.equal(100, bonusPeriod[4].toNumber());
+
+    bonusPeriod = await crowdsale.BonusPeriodFor(1527551999);
+    assert.equal(true, bonusPeriod[0]);
+    assert.equal(5, bonusPeriod[3].toNumber());
+    assert.equal(100, bonusPeriod[4].toNumber());
+
+    bonusPeriod = await crowdsale.BonusPeriodFor(1527552000);
     assert.equal(false, bonusPeriod[0]);
+
+    let bonusPeriodsCount = await crowdsale.BonusPeriodsCount();
+    assert.equal(4, bonusPeriodsCount);
   });
 
   /*it("add bonus period", async function() {

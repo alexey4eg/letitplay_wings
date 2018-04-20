@@ -1,6 +1,6 @@
 import expectThrow from "zeppelin-solidity/test/helpers/expectThrow.js";
-const FOR_SALE = 600000000;
-const PRESALE_TOKENS = 100000;
+const FOR_SALE = 590000000;
+const PRESALE = 10000000;
 const TEAM = 50000000;
 
 var LetItPlayToken = artifacts.require("./LetItPlayToken.sol");
@@ -15,17 +15,18 @@ contract("LetItPlayToken", function(accounts) {
   let advisers = accounts[8];
   let bounty = accounts[9];
   let presale = accounts[0];
+  let eosShareDrop = accounts[1];
   let token, decimals, shift;
 
   beforeEach('setup contract for each test', async function () {
-    token = await LetItPlayToken.new(forSale, eco, founders, team, advisers, bounty, presale, PRESALE_TOKENS);
+    token = await LetItPlayToken.new(forSale, eco, founders, team, advisers, bounty, presale, eosShareDrop);
     decimals = await token.decimals();
     shift = Math.pow(10, decimals);
   });
 
   it("initial distribution", async function() {
       var balance = await token.balanceOf(forSale);
-      assert.equal((FOR_SALE - PRESALE_TOKENS)*shift, balance.toNumber(), "wrong for sale");
+      assert.equal(FOR_SALE * shift, balance.toNumber(), "wrong for sale");
       balance = await token.balanceOf(eco);
       assert.equal(150000000 * shift, balance, "wrong for eco");
       balance = await token.balanceOf(founders);
@@ -35,9 +36,11 @@ contract("LetItPlayToken", function(accounts) {
       balance = await token.balanceOf(advisers);
       assert.equal(30000000 * shift, balance, "wrong for advisers");
       balance = await token.balanceOf(bounty);
-      assert.equal(20000000 * shift, balance, "wrong for bounty");
+      assert.equal(10000000 * shift, balance, "wrong for bounty");
       balance = await token.balanceOf(presale);
-      assert.equal(PRESALE_TOKENS * shift, balance, "wrong for presale");
+      assert.equal(PRESALE * shift, balance, "wrong for presale");
+      balance = await token.balanceOf(eosShareDrop);
+      assert.equal(10000000 * shift, balance, "wrong for eosShareDrop");
 
       let decimals = await token.decimals();
       assert.equal(decimals.toNumber(), 8);
@@ -59,7 +62,7 @@ contract("LetItPlayToken", function(accounts) {
       let balance = await token.balanceOf(user);
       assert.equal(100, balance);
       balance = await token.balanceOf(forSale);
-      assert.equal((FOR_SALE - PRESALE_TOKENS) * shift - 100, balance.toNumber());
+      assert.equal(FOR_SALE * shift - 100, balance.toNumber());
 
       await expectThrow(token.transferByCrowdsale(user, 100, {from:user}));
       await expectThrow(token.transferByCrowdsale(user, 100));
@@ -71,7 +74,7 @@ contract("LetItPlayToken", function(accounts) {
       let balance = await token.balanceOf(user);
       assert.equal(100, balance);
       balance = await token.balanceOf(forSale);
-      assert.equal((FOR_SALE - PRESALE_TOKENS) * shift - 100, balance.toNumber());
+      assert.equal(FOR_SALE * shift - 100, balance.toNumber());
 
       await expectThrow(token.transferByOwner(forSale, user, 100, {from:user}));
       await expectThrow(token.transferByOwner(forSale, user, 100, {from:crowdsale}));
@@ -91,5 +94,15 @@ contract("LetItPlayToken", function(accounts) {
       await token.transferFrom(founders, team, 150, {from:user});
       balance = await token.balanceOf(team);
       assert.equal(200 + TEAM * shift, balance.toNumber());
+    });
+
+    it("burn", async function() {
+        expectThrow(token.burn(100, {from:bounty}));
+        let balance = await token.balanceOf(accounts[0]);
+        token.burn(100, {from:accounts[0]});
+        let balanceAfter = await token.balanceOf(accounts[0]);
+        assert.equal(100, balance - balanceAfter);
+        balance = await token.balanceOf(0);
+        assert.equal(100, balance);
     });
 });

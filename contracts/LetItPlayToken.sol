@@ -14,6 +14,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
         address public team;
         address public advisers;
         address public bounty;
+        address public eosShareDrop;
 
         bool releasedForTransfer;
 
@@ -27,7 +28,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
             address _advisers,
             address _bounty,
             address _preSale,
-            uint256 _preSaleTokens
+            address _eosShareDrop
           ) public {
           name = "LetItPlayToken";
           symbol = "PLAY";
@@ -40,18 +41,17 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           team = _team;
           advisers = _advisers;
           bounty = _bounty;
+          eosShareDrop = _eosShareDrop;
           preSale = _preSale;
 
-          uint256 forSaleTokens = totalSupply * 60 / 100;
-          _preSaleTokens = _preSaleTokens * shift;
-
-          balances[forSale] = forSaleTokens - _preSaleTokens;
-          balances[preSale] = _preSaleTokens;
+          balances[forSale] = totalSupply * 59 / 100;
           balances[ecoSystemFund] = totalSupply * 15 / 100;
           balances[founders] = totalSupply * 15 / 100;
           balances[team] = totalSupply * 5 / 100;
           balances[advisers] = totalSupply * 3 / 100;
-          balances[bounty] = totalSupply * 2 / 100;
+          balances[bounty] = totalSupply * 1 / 100;
+          balances[preSale] = totalSupply * 1 / 100;
+          balances[eosShareDrop] = totalSupply * 1 / 100;
         }
 
         function transferByOwner(address from, address to, uint256 value) public onlyOwner {
@@ -85,5 +85,12 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
         function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
            require(releasedForTransfer);
            return super.transferFrom(_from, _to, _value);
+        }
+
+        function burn(uint256 value) public  onlyOwner {
+            require(value <= balances[msg.sender]);
+            balances[msg.sender] = balances[msg.sender].sub(value);
+            balances[address(0)] = balances[address(0)].add(value);
+            emit Transfer(msg.sender, address(0), value);
         }
 }

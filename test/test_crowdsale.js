@@ -2,7 +2,7 @@ import expectThrow from "zeppelin-solidity/test/helpers/expectThrow.js";
 let MINIMAL_GOAL = web3.toWei(1, 'ether');
 let HARD_CAP =     web3.toWei(2, 'ether');
 const TOKEN_PRICE = web3.toWei(1, 'finney');
-const PRESALE_TOKENS = 100000;
+const PRESALE_TOKENS = 10000000;
 const COMMISSION_EPS = 0.01;
 
 let LetItPlayToken = artifacts.require("./LetItPlayToken.sol");
@@ -32,14 +32,14 @@ contract("Crowdsale", async function(accounts) {
 
   const init_wl_and_donate = async function(amount) {
     //return new Promise(()=>{})
-    await crowdsale.start(currenttime + 2, currenttime + 3598 * 22 * 13, fundingAddress);
+    await crowdsale.start(currenttime + 10, currenttime + 3598 * 22 * 13, fundingAddress);
     await crowdsale.AddToWhiteList(user);
-    timeTravel(3);
+    timeTravel(15);
     await crowdsale.sendTransaction({from:user, value: amount});
   }
 
   beforeEach('setup contract for each test', async function () {
-      token = await LetItPlayToken.new(forSale, accounts[5], accounts[6], accounts[7], accounts[8], accounts[9], accounts[0], PRESALE_TOKENS);
+      token = await LetItPlayToken.new(forSale, accounts[5], accounts[6], accounts[7], accounts[8], accounts[9], accounts[0], accounts[1]);
       crowdsale = await Crowdsale.new(MINIMAL_GOAL, HARD_CAP, TOKEN_PRICE, token.address);
       token.setCrowdsale(crowdsale.address);
       user = accounts[2];
@@ -56,10 +56,10 @@ contract("Crowdsale", async function(accounts) {
   });
 
   it("whitelist", async function() {
-    await crowdsale.start(currenttime + 2, currenttime + 3600 * 24 * 15, fundingAddress);
+    await crowdsale.start(currenttime + 10, currenttime + 3600 * 24 * 15, fundingAddress);
     await expectThrow(crowdsale.sendTransaction({from:user, value: 10}));
     await crowdsale.AddToWhiteList(user);
-    timeTravel(3);
+    timeTravel(15);
     await crowdsale.sendTransaction({from:user, value: 10});
   });
 
@@ -74,11 +74,11 @@ contract("Crowdsale", async function(accounts) {
     let totalSold = await crowdsale.totalSold();
     let totalCollected = await crowdsale.totalCollected();
     let givenTokens = toDonate * shift/ TOKEN_PRICE;
-    givenTokens += givenTokens * 3 / 10;
-    assert.equal(givenTokens, balance.toNumber());
-    assert.equal(toDonate, ethBalance);
-    assert.equal(toDonate, totalCollected - totalCollectedBefore);
-    assert.equal(givenTokens, totalSold - totalSoldBefore);
+    //givenTokens += givenTokens * 3 / 10;
+    assert.equal(givenTokens, balance.toNumber(),"1");
+    assert.equal(toDonate, ethBalance, "2");
+    assert.equal(toDonate, totalCollected - totalCollectedBefore,"3");
+    assert.equal(givenTokens, totalSold - totalSoldBefore,"4");
   });
 
   it("crowdsale success", async function() {

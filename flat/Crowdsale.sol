@@ -1,5 +1,142 @@
 pragma solidity ^0.4.13;
 
+contract Ownable {
+  address public owner;
+
+
+  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+
+  /**
+   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
+   * account.
+   */
+  function Ownable() public {
+    owner = msg.sender;
+  }
+
+  /**
+   * @dev Throws if called by any account other than the owner.
+   */
+  modifier onlyOwner() {
+    require(msg.sender == owner);
+    _;
+  }
+
+  /**
+   * @dev Allows the current owner to transfer control of the contract to a newOwner.
+   * @param newOwner The address to transfer ownership to.
+   */
+  function transferOwnership(address newOwner) public onlyOwner {
+    require(newOwner != address(0));
+    emit OwnershipTransferred(owner, newOwner);
+    owner = newOwner;
+  }
+
+}
+
+contract WithBonusPeriods is Ownable {
+  uint256 constant INVALID_FROM_TIMESTAMP = 1000000000000;
+  uint256 constant INFINITY_TO_TIMESTAMP= 1000000000000;
+  struct BonusPeriod {
+    uint256 fromTimestamp;
+    uint256 toTimestamp;
+    uint256 bonusNumerator;
+    uint256 bonusDenominator;
+  }
+
+  BonusPeriod[] public bonusPeriods;
+  BonusPeriod currentBonusPeriod;
+
+  function WithBonusPeriods() public {
+      initBonuses();
+  }
+
+  function BonusPeriodsCount() public view returns (uint8) {
+    return uint8(bonusPeriods.length);
+  }
+
+  //find out bonus for specific timestamp
+  function BonusPeriodFor(uint256 timestamp) public view returns (bool ongoing, uint256 from, uint256 to, uint256 num, uint256 den) {
+    for(uint i = 0; i < bonusPeriods.length; i++)
+      if (bonusPeriods[i].fromTimestamp <= timestamp && bonusPeriods[i].toTimestamp >= timestamp)
+        return (true, bonusPeriods[i].fromTimestamp, bonusPeriods[i].toTimestamp, bonusPeriods[i].bonusNumerator,
+          bonusPeriods[i].bonusDenominator);
+    return (false, 0, 0, 0, 0);
+  }
+
+  function initBonusPeriod(uint256 from, uint256 to, uint256 num, uint256 den) internal  {
+    bonusPeriods.push(BonusPeriod(from, to, num, den));
+  }
+
+  function initBonuses() internal {
+      //1-7 May, 20%
+      initBonusPeriod(1525132800, 1525737599, 20, 100);
+      //8-14 May, 15%
+      initBonusPeriod(1525737600, 1526342399, 15, 100);
+      //15 -21 May, 10%
+      initBonusPeriod(1526342400, 1526947199, 10, 100);
+      //22 -28 May, 5%
+      initBonusPeriod(1526947200, 1527551999, 5, 100);
+  }
+
+  function updateCurrentBonusPeriod() internal  {
+    if (currentBonusPeriod.fromTimestamp <= block.timestamp
+      && currentBonusPeriod.toTimestamp >= block.timestamp)
+      return;
+
+    currentBonusPeriod.fromTimestamp = INVALID_FROM_TIMESTAMP;
+
+    for(uint i = 0; i < bonusPeriods.length; i++)
+      if (bonusPeriods[i].fromTimestamp <= block.timestamp && bonusPeriods[i].toTimestamp >= block.timestamp) {
+        currentBonusPeriod = bonusPeriods[i];
+        return;
+      }
+  }
+}
+
+library SafeMath {
+
+  /**
+  * @dev Multiplies two numbers, throws on overflow.
+  */
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) {
+      return 0;
+    }
+    uint256 c = a * b;
+    assert(c / a == b);
+    return c;
+  }
+
+  /**
+  * @dev Integer division of two numbers, truncating the quotient.
+  */
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    return c;
+  }
+
+  /**
+  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+  */
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+
+  /**
+  * @dev Adds two numbers, throws on overflow.
+  */
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
 contract ERC20Basic {
   function totalSupply() public view returns (uint256);
   function balanceOf(address who) public view returns (uint256);
@@ -12,20 +149,6 @@ contract ERC20 is ERC20Basic {
   function transferFrom(address from, address to, uint256 value) public returns (bool);
   function approve(address spender, uint256 value) public returns (bool);
   event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-contract HasManager {
-  address public manager;
-
-  modifier onlyManager {
-    require(msg.sender == manager);
-    _;
-  }
-
-  function transferManager(address _newManager) public onlyManager() {
-    require(_newManager != address(0));
-    manager = _newManager;
-  }
 }
 
 contract BasicToken is ERC20Basic {
@@ -157,170 +280,29 @@ contract StandardToken is ERC20, BasicToken {
 
 }
 
-library SafeMath {
-
-  /**
-  * @dev Multiplies two numbers, throws on overflow.
-  */
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    if (a == 0) {
-      return 0;
-    }
-    uint256 c = a * b;
-    assert(c / a == b);
-    return c;
+contract Whitelist is Ownable {
+  mapping(address => bool) public whitelist;
+  function AddToWhiteList(address _addr) public onlyOwner {
+      whitelist[_addr] = true;
   }
 
-  /**
-  * @dev Integer division of two numbers, truncating the quotient.
-  */
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    // assert(b > 0); // Solidity automatically throws when dividing by 0
-    uint256 c = a / b;
-    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-    return c;
-  }
-
-  /**
-  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
-  */
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
-
-  /**
-  * @dev Adds two numbers, throws on overflow.
-  */
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    assert(c >= a);
-    return c;
+  modifier whitelistedOnly {
+    require(whitelist[msg.sender]);
+    _;
   }
 }
 
-contract Ownable {
-  address public owner;
+contract HasManager {
+  address public manager;
 
-
-  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-
-  /**
-   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-   * account.
-   */
-  function Ownable() public {
-    owner = msg.sender;
-  }
-
-  /**
-   * @dev Throws if called by any account other than the owner.
-   */
-  modifier onlyOwner() {
-    require(msg.sender == owner);
+  modifier onlyManager {
+    require(msg.sender == manager);
     _;
   }
 
-  /**
-   * @dev Allows the current owner to transfer control of the contract to a newOwner.
-   * @param newOwner The address to transfer ownership to.
-   */
-  function transferOwnership(address newOwner) public onlyOwner {
-    require(newOwner != address(0));
-    emit OwnershipTransferred(owner, newOwner);
-    owner = newOwner;
-  }
-
-}
-
-contract Crowdsaled is Ownable {
-        address public crowdsaleContract = address(0);
-        function Crowdsaled() public {
-        }
-
-        modifier onlyCrowdsale{
-          require(msg.sender == crowdsaleContract);
-          _;
-        }
-
-        modifier onlyCrowdsaleOrOwner {
-          require((msg.sender == crowdsaleContract) || (msg.sender == owner));
-          _;
-        }
-
-        function setCrowdsale(address crowdsale) public onlyOwner() {
-                crowdsaleContract = crowdsale;
-        }
-}
-
-contract WithBonusPeriods is Ownable {
-  event DEBUG(uint256 code);
-  uint256 constant INVALID_FROM_TIMESTAMP = 1000000000000;
-  uint256 constant INFINITY_TO_TIMESTAMP= 1000000000000;
-  struct BonusPeriod {
-    uint256 fromTimestamp;
-    uint256 toTimestamp;
-    uint256 bonusNumerator;
-    uint256 bonusDenominator;
-  }
-
-  BonusPeriod[] public bonusPeriods;
-  BonusPeriod currentBonusPeriod;
-
-  function WithBonusPeriods() public {
-      initBonuses();
-  }
-
-  function BonusPeriodsCount() public view returns (uint8) {
-    return uint8(bonusPeriods.length);
-  }
-
-  function BonusPeriodFor(uint256 timestamp) public view returns (bool ongoing, uint256 from, uint256 to, uint256 num, uint256 den) {
-    for(uint i = 0; i < bonusPeriods.length; i++)
-      if (bonusPeriods[i].fromTimestamp <= timestamp && bonusPeriods[i].toTimestamp >= timestamp)
-        return (true, bonusPeriods[i].fromTimestamp, bonusPeriods[i].toTimestamp, bonusPeriods[i].bonusNumerator,
-          bonusPeriods[i].bonusDenominator);
-    return (false, 0, 0, 0, 0);
-  }
-
-  /*function removeBonusPeriod(uint index) public onlyOwner {
-    require(index >=0 && bonusPeriods.length > index);
-    for(uint i = index + 1; i < bonusPeriods.length; i++)
-      bonusPeriods[i - 1] = bonusPeriods[i];
-    bonusPeriods.length--;
-  }
-
-  function addBonusPeriod(uint256 fromTimestamp, uint256 toTimestamp, uint bonusNumerator, uint bonusDenominator) public onlyOwner {
-      require(fromTimestamp <= toTimestamp);
-      require(bonusNumerator >= 0 && bonusDenominator > 0);
-      require(bonusPeriods.length < 255);
-
-      bonusPeriods.push(BonusPeriod(fromTimestamp, toTimestamp, bonusNumerator, bonusDenominator));
-  }*/
-
-  function initBonusPeriod(uint256 from, uint256 to, uint256 num, uint256 den) internal  {
-    bonusPeriods.push(BonusPeriod(from, to, num, den));
-  }
-
-  function initBonuses() internal {
-    //test bonuses, real ones will be added later here
-      initBonusPeriod(block.timestamp, block.timestamp + 3600 * 24, 3, 10);
-      initBonusPeriod(block.timestamp + 3600 * 24 + 1, block.timestamp + 3600 * 48, 1, 10);
-  }
-
-  function updateCurrentBonusPeriod() internal  {
-    if (currentBonusPeriod.fromTimestamp <= block.timestamp
-      && currentBonusPeriod.toTimestamp >= block.timestamp)
-      return;
-
-    currentBonusPeriod.fromTimestamp = INVALID_FROM_TIMESTAMP;
-
-    for(uint i = 0; i < bonusPeriods.length; i++)
-      if (bonusPeriods[i].fromTimestamp <= block.timestamp && bonusPeriods[i].toTimestamp >= block.timestamp) {
-        currentBonusPeriod = bonusPeriods[i];
-        return;
-      }
+  function transferManager(address _newManager) public onlyManager() {
+    require(_newManager != address(0));
+    manager = _newManager;
   }
 }
 
@@ -432,7 +414,6 @@ contract ICrowdsaleProcessor is Ownable, HasManager {
 
 contract BasicCrowdsale is ICrowdsaleProcessor {
   event CROWDSALE_START(uint256 startTimestamp, uint256 endTimestamp, address fundingAddress);
-  //event DEBUG(uint256 value);
 
   // Where to transfer collected ETH
   address public fundingAddress;
@@ -559,18 +540,6 @@ contract BasicCrowdsale is ICrowdsaleProcessor {
   }
 }
 
-contract Whitelist is Ownable {
-  mapping(address => bool) public whitelist;
-  function AddToWhiteList(address _addr) public onlyOwner {
-      whitelist[_addr] = true;
-  }
-
-  modifier whitelistedOnly {
-    require(whitelist[msg.sender]);
-    _;
-  }
-}
-
 contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
 
   struct Investor {
@@ -603,18 +572,7 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     token = LetItPlayToken(_token);
   }
 
-  /*function initPresaleItem(address addr, uint256 eth, uint256 tokens) internal{
-        participants[addr].weiDonated += eth;
-        participants[addr].tokensGiven += tokens;
-        token.transferByCrowdsale(addr, tokens);
-  }
-
-  function initPresale() public onlyOwner() {
-        initPresaleItem(0xa4dba833494db5a101b82736bce558c05d78479,  1, 10);
-        initPresaleItem(0xb0b5594fb4ff44ac05b2ff65aded3c78a8a6b5a5, 3, 30);
-  }*/
-
-// Here goes ICrowdsaleProcessor implementation
+  // Here goes ICrowdsaleProcessor implementation
 
   // returns address of crowdsale token. The token must be ERC20-compliant
   function getToken()
@@ -671,6 +629,8 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     }
 
     uint256 tokensSold = _value * uint256(10)**token.decimals() / tokenRateWei;
+
+    //apply bonus period
     updateCurrentBonusPeriod();
     if (currentBonusPeriod.fromTimestamp != INVALID_FROM_TIMESTAMP)
       tokensSold += tokensSold * currentBonusPeriod.bonusNumerator / currentBonusPeriod.bonusDenominator;
@@ -703,7 +663,6 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
 
     // prevent from doing it twice
     require(weiDonated > 0);
-    //DEBUG(weiDonated);
     participants[msg.sender].weiDonated = 0;
     participants[msg.sender].tokensGiven = 0;
 
@@ -712,6 +671,26 @@ contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
     //this must be approved by investor
     token.transferFromByCrowdsale(msg.sender, token.forSale(), tokens);
   }
+}
+
+contract Crowdsaled is Ownable {
+        address public crowdsaleContract = address(0);
+        function Crowdsaled() public {
+        }
+
+        modifier onlyCrowdsale{
+          require(msg.sender == crowdsaleContract);
+          _;
+        }
+
+        modifier onlyCrowdsaleOrOwner {
+          require((msg.sender == crowdsaleContract) || (msg.sender == owner));
+          _;
+        }
+
+        function setCrowdsale(address crowdsale) public onlyOwner() {
+                crowdsaleContract = crowdsale;
+        }
 }
 
 contract LetItPlayToken is Crowdsaled, StandardToken {
@@ -727,6 +706,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
         address public team;
         address public advisers;
         address public bounty;
+        address public eosShareDrop;
 
         bool releasedForTransfer;
 
@@ -740,7 +720,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
             address _advisers,
             address _bounty,
             address _preSale,
-            uint256 _preSaleTokens
+            address _eosShareDrop
           ) public {
           name = "LetItPlayToken";
           symbol = "PLAY";
@@ -753,18 +733,17 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
           team = _team;
           advisers = _advisers;
           bounty = _bounty;
+          eosShareDrop = _eosShareDrop;
           preSale = _preSale;
 
-          uint256 forSaleTokens = totalSupply * 60 / 100;
-          _preSaleTokens = _preSaleTokens * shift;
-
-          balances[forSale] = forSaleTokens - _preSaleTokens;
-          balances[preSale] = _preSaleTokens;
+          balances[forSale] = totalSupply * 59 / 100;
           balances[ecoSystemFund] = totalSupply * 15 / 100;
           balances[founders] = totalSupply * 15 / 100;
           balances[team] = totalSupply * 5 / 100;
           balances[advisers] = totalSupply * 3 / 100;
-          balances[bounty] = totalSupply * 2 / 100;
+          balances[bounty] = totalSupply * 1 / 100;
+          balances[preSale] = totalSupply * 1 / 100;
+          balances[eosShareDrop] = totalSupply * 1 / 100;
         }
 
         function transferByOwner(address from, address to, uint256 value) public onlyOwner {
@@ -798,6 +777,13 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
         function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
            require(releasedForTransfer);
            return super.transferFrom(_from, _to, _value);
+        }
+
+        function burn(uint256 value) public  onlyOwner {
+            require(value <= balances[msg.sender]);
+            balances[msg.sender] = balances[msg.sender].sub(value);
+            balances[address(0)] = balances[address(0)].add(value);
+            emit Transfer(msg.sender, address(0), value);
         }
 }
 
