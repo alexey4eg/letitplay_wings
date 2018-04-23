@@ -1,92 +1,16 @@
 pragma solidity ^0.4.13;
 
-contract ERC20Basic {
-  function totalSupply() public view returns (uint256);
-  function balanceOf(address who) public view returns (uint256);
-  function transfer(address to, uint256 value) public returns (bool);
-  event Transfer(address indexed from, address indexed to, uint256 value);
-}
+contract HasManager {
+  address public manager;
 
-contract BasicToken is ERC20Basic {
-  using SafeMath for uint256;
-
-  mapping(address => uint256) balances;
-
-  uint256 totalSupply_;
-
-  /**
-  * @dev total number of tokens in existence
-  */
-  function totalSupply() public view returns (uint256) {
-    return totalSupply_;
+  modifier onlyManager {
+    require(msg.sender == manager);
+    _;
   }
 
-  /**
-  * @dev transfer token for a specified address
-  * @param _to The address to transfer to.
-  * @param _value The amount to be transferred.
-  */
-  function transfer(address _to, uint256 _value) public returns (bool) {
-    require(_to != address(0));
-    require(_value <= balances[msg.sender]);
-
-    // SafeMath.sub will throw if there is not enough balance.
-    balances[msg.sender] = balances[msg.sender].sub(_value);
-    balances[_to] = balances[_to].add(_value);
-    emit Transfer(msg.sender, _to, _value);
-    return true;
-  }
-
-  /**
-  * @dev Gets the balance of the specified address.
-  * @param _owner The address to query the the balance of.
-  * @return An uint256 representing the amount owned by the passed address.
-  */
-  function balanceOf(address _owner) public view returns (uint256 balance) {
-    return balances[_owner];
-  }
-
-}
-
-library SafeMath {
-
-  /**
-  * @dev Multiplies two numbers, throws on overflow.
-  */
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    if (a == 0) {
-      return 0;
-    }
-    uint256 c = a * b;
-    assert(c / a == b);
-    return c;
-  }
-
-  /**
-  * @dev Integer division of two numbers, truncating the quotient.
-  */
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    // assert(b > 0); // Solidity automatically throws when dividing by 0
-    uint256 c = a / b;
-    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-    return c;
-  }
-
-  /**
-  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
-  */
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
-
-  /**
-  * @dev Adds two numbers, throws on overflow.
-  */
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    assert(c >= a);
-    return c;
+  function transferManager(address _newManager) public onlyManager() {
+    require(_newManager != address(0));
+    manager = _newManager;
   }
 }
 
@@ -125,78 +49,24 @@ contract Ownable {
 
 }
 
-contract WithBonusPeriods is Ownable {
-  uint256 constant INVALID_FROM_TIMESTAMP = 1000000000000;
-  uint256 constant INFINITY_TO_TIMESTAMP= 1000000000000;
-  struct BonusPeriod {
-    uint256 fromTimestamp;
-    uint256 toTimestamp;
-    uint256 bonusNumerator;
-    uint256 bonusDenominator;
-  }
+contract Crowdsaled is Ownable {
+        address public crowdsaleContract = address(0);
+        function Crowdsaled() public {
+        }
 
-  BonusPeriod[] public bonusPeriods;
-  BonusPeriod currentBonusPeriod;
+        modifier onlyCrowdsale{
+          require(msg.sender == crowdsaleContract);
+          _;
+        }
 
-  function WithBonusPeriods() public {
-      initBonuses();
-  }
+        modifier onlyCrowdsaleOrOwner {
+          require((msg.sender == crowdsaleContract) || (msg.sender == owner));
+          _;
+        }
 
-  function BonusPeriodsCount() public view returns (uint8) {
-    return uint8(bonusPeriods.length);
-  }
-
-  //find out bonus for specific timestamp
-  function BonusPeriodFor(uint256 timestamp) public view returns (bool ongoing, uint256 from, uint256 to, uint256 num, uint256 den) {
-    for(uint i = 0; i < bonusPeriods.length; i++)
-      if (bonusPeriods[i].fromTimestamp <= timestamp && bonusPeriods[i].toTimestamp >= timestamp)
-        return (true, bonusPeriods[i].fromTimestamp, bonusPeriods[i].toTimestamp, bonusPeriods[i].bonusNumerator,
-          bonusPeriods[i].bonusDenominator);
-    return (false, 0, 0, 0, 0);
-  }
-
-  function initBonusPeriod(uint256 from, uint256 to, uint256 num, uint256 den) internal  {
-    bonusPeriods.push(BonusPeriod(from, to, num, den));
-  }
-
-  function initBonuses() internal {
-      //1-7 May, 20%
-      initBonusPeriod(1525132800, 1525737599, 20, 100);
-      //8-14 May, 15%
-      initBonusPeriod(1525737600, 1526342399, 15, 100);
-      //15 -21 May, 10%
-      initBonusPeriod(1526342400, 1526947199, 10, 100);
-      //22 -28 May, 5%
-      initBonusPeriod(1526947200, 1527551999, 5, 100);
-  }
-
-  function updateCurrentBonusPeriod() internal  {
-    if (currentBonusPeriod.fromTimestamp <= block.timestamp
-      && currentBonusPeriod.toTimestamp >= block.timestamp)
-      return;
-
-    currentBonusPeriod.fromTimestamp = INVALID_FROM_TIMESTAMP;
-
-    for(uint i = 0; i < bonusPeriods.length; i++)
-      if (bonusPeriods[i].fromTimestamp <= block.timestamp && bonusPeriods[i].toTimestamp >= block.timestamp) {
-        currentBonusPeriod = bonusPeriods[i];
-        return;
-      }
-  }
-}
-
-contract HasManager {
-  address public manager;
-
-  modifier onlyManager {
-    require(msg.sender == manager);
-    _;
-  }
-
-  function transferManager(address _newManager) public onlyManager() {
-    require(_newManager != address(0));
-    manager = _newManager;
-  }
+        function setCrowdsale(address crowdsale) public onlyOwner() {
+                crowdsaleContract = crowdsale;
+        }
 }
 
 contract ICrowdsaleProcessor is Ownable, HasManager {
@@ -433,24 +303,304 @@ contract BasicCrowdsale is ICrowdsaleProcessor {
   }
 }
 
-contract Crowdsaled is Ownable {
-        address public crowdsaleContract = address(0);
-        function Crowdsaled() public {
-        }
+contract WithBonusPeriods is Ownable {
+  uint256 constant INVALID_FROM_TIMESTAMP = 1000000000000;
+  uint256 constant INFINITY_TO_TIMESTAMP= 1000000000000;
+  struct BonusPeriod {
+    uint256 fromTimestamp;
+    uint256 toTimestamp;
+    uint256 bonusNumerator;
+    uint256 bonusDenominator;
+  }
 
-        modifier onlyCrowdsale{
-          require(msg.sender == crowdsaleContract);
-          _;
-        }
+  BonusPeriod[] public bonusPeriods;
+  BonusPeriod currentBonusPeriod;
 
-        modifier onlyCrowdsaleOrOwner {
-          require((msg.sender == crowdsaleContract) || (msg.sender == owner));
-          _;
-        }
+  function WithBonusPeriods() public {
+      initBonuses();
+  }
 
-        function setCrowdsale(address crowdsale) public onlyOwner() {
-                crowdsaleContract = crowdsale;
-        }
+  function BonusPeriodsCount() public view returns (uint8) {
+    return uint8(bonusPeriods.length);
+  }
+
+  //find out bonus for specific timestamp
+  function BonusPeriodFor(uint256 timestamp) public view returns (bool ongoing, uint256 from, uint256 to, uint256 num, uint256 den) {
+    for(uint i = 0; i < bonusPeriods.length; i++)
+      if (bonusPeriods[i].fromTimestamp <= timestamp && bonusPeriods[i].toTimestamp >= timestamp)
+        return (true, bonusPeriods[i].fromTimestamp, bonusPeriods[i].toTimestamp, bonusPeriods[i].bonusNumerator,
+          bonusPeriods[i].bonusDenominator);
+    return (false, 0, 0, 0, 0);
+  }
+
+  function initBonusPeriod(uint256 from, uint256 to, uint256 num, uint256 den) internal  {
+    bonusPeriods.push(BonusPeriod(from, to, num, den));
+  }
+
+  function initBonuses() internal {
+      //1-7 May, 20%
+      initBonusPeriod(1525132800, 1525737599, 20, 100);
+      //8-14 May, 15%
+      initBonusPeriod(1525737600, 1526342399, 15, 100);
+      //15 -21 May, 10%
+      initBonusPeriod(1526342400, 1526947199, 10, 100);
+      //22 -28 May, 5%
+      initBonusPeriod(1526947200, 1527551999, 5, 100);
+  }
+
+  function updateCurrentBonusPeriod() internal  {
+    if (currentBonusPeriod.fromTimestamp <= block.timestamp
+      && currentBonusPeriod.toTimestamp >= block.timestamp)
+      return;
+
+    currentBonusPeriod.fromTimestamp = INVALID_FROM_TIMESTAMP;
+
+    for(uint i = 0; i < bonusPeriods.length; i++)
+      if (bonusPeriods[i].fromTimestamp <= block.timestamp && bonusPeriods[i].toTimestamp >= block.timestamp) {
+        currentBonusPeriod = bonusPeriods[i];
+        return;
+      }
+  }
+}
+
+library SafeMath {
+
+  /**
+  * @dev Multiplies two numbers, throws on overflow.
+  */
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) {
+      return 0;
+    }
+    uint256 c = a * b;
+    assert(c / a == b);
+    return c;
+  }
+
+  /**
+  * @dev Integer division of two numbers, truncating the quotient.
+  */
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    return c;
+  }
+
+  /**
+  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+  */
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+
+  /**
+  * @dev Adds two numbers, throws on overflow.
+  */
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
+contract Whitelist is Ownable {
+  mapping(address => bool) public whitelist;
+  address public manager;
+  function AddToWhiteList(address _addr) public {
+      require(msg.sender == manager || msg.sender == owner);
+      whitelist[_addr] = true;
+  }
+
+  function AssignManager(address _addr) public onlyOwner {
+      manager = _addr;
+  }
+
+  modifier whitelistedOnly {
+    require(whitelist[msg.sender]);
+    _;
+  }
+}
+
+contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
+
+  struct Investor {
+    uint256 weiDonated;
+    uint256 tokensGiven;
+  }
+
+  mapping(address => Investor) participants;
+
+  uint256 public tokenRateWei;
+  LetItPlayToken public token;
+
+  // Ctor. MinimalGoal, hardCap, and price are not changeable.
+  function Crowdsale(
+    uint256 _minimalGoal,
+    uint256 _hardCap,
+    uint256 _tokenRateWei,
+    address _token
+  )
+    public
+    // simplest case where manager==owner. See onlyOwner() and onlyManager() modifiers
+    // before functions to figure out the cases in which those addresses should differ
+    BasicCrowdsale(msg.sender, msg.sender)
+  {
+    // just setup them once...
+    minimalGoal = _minimalGoal;
+    hardCap = _hardCap;
+    tokenRateWei = _tokenRateWei;
+    token = LetItPlayToken(_token);
+  }
+
+  // Here goes ICrowdsaleProcessor implementation
+
+  // returns address of crowdsale token. The token must be ERC20-compliant
+  function getToken()
+    public
+    returns(address)
+  {
+    return address(token);
+  }
+
+  // called by CrowdsaleController to transfer reward part of
+  // tokens sold by successful crowdsale to Forecasting contract.
+  // This call is made upon closing successful crowdfunding process.
+  function mintTokenRewards(
+    address _contract,  // Forecasting contract
+    uint256 _amount     // agreed part of totalSold which is intended for rewards
+  )
+    public
+    onlyManager() // manager is CrowdsaleController instance
+  {
+    // crowdsale token is mintable in this example, tokens are created here
+    token.transferByCrowdsale(_contract, _amount);
+  }
+
+  // transfers crowdsale token from mintable to transferrable state
+  function releaseTokens()
+    public
+    onlyManager()             // manager is CrowdsaleController instance
+    hasntStopped()            // crowdsale wasn't cancelled
+    whenCrowdsaleSuccessful() // crowdsale was successful
+  {
+    // see token example
+    token.releaseForTransfer();
+  }
+
+  function () payable public {
+    require(msg.value > 0);
+    sellTokens(msg.sender, msg.value);
+  }
+
+  function sellTokens(address _recepient, uint256 _value)
+    internal
+    hasBeenStarted()
+    hasntStopped()
+    whenCrowdsaleAlive()
+    whitelistedOnly()
+  {
+    uint256 newTotalCollected = totalCollected + _value;
+
+    if (hardCap < newTotalCollected) {
+      uint256 refund = newTotalCollected - hardCap;
+      uint256 diff = _value - refund;
+      _recepient.transfer(refund);
+      _value = diff;
+    }
+
+    uint256 tokensSold = _value * uint256(10)**token.decimals() / tokenRateWei;
+
+    //apply bonus period
+    updateCurrentBonusPeriod();
+    if (currentBonusPeriod.fromTimestamp != INVALID_FROM_TIMESTAMP)
+      tokensSold += tokensSold * currentBonusPeriod.bonusNumerator / currentBonusPeriod.bonusDenominator;
+
+    token.transferByCrowdsale(_recepient, tokensSold);
+    participants[_recepient].weiDonated += _value;
+    participants[_recepient].tokensGiven += tokensSold;
+    totalCollected += _value;
+    totalSold += tokensSold;
+  }
+
+  // project's owner withdraws ETH funds to the funding address upon successful crowdsale
+  function withdraw(uint256 _amount) public // can be done partially
+    onlyOwner() // project's owner
+    hasntStopped()  // crowdsale wasn't cancelled
+    whenCrowdsaleSuccessful() // crowdsale completed successfully
+  {
+    require(_amount <= address(this).balance);
+    fundingAddress.transfer(_amount);
+  }
+
+  // backers refund their ETH if the crowdsale was cancelled or has failed
+  function refund() public
+  {
+    // either cancelled or failed
+    require(stopped || isFailed());
+
+    uint256 weiDonated = participants[msg.sender].weiDonated;
+    uint256 tokens = participants[msg.sender].tokensGiven;
+
+    // prevent from doing it twice
+    require(weiDonated > 0);
+    participants[msg.sender].weiDonated = 0;
+    participants[msg.sender].tokensGiven = 0;
+
+    msg.sender.transfer(weiDonated);
+
+    //this must be approved by investor
+    token.transferFromByCrowdsale(msg.sender, token.forSale(), tokens);
+  }
+}
+
+contract ERC20Basic {
+  function totalSupply() public view returns (uint256);
+  function balanceOf(address who) public view returns (uint256);
+  function transfer(address to, uint256 value) public returns (bool);
+  event Transfer(address indexed from, address indexed to, uint256 value);
+}
+
+contract BasicToken is ERC20Basic {
+  using SafeMath for uint256;
+
+  mapping(address => uint256) balances;
+
+  uint256 totalSupply_;
+
+  /**
+  * @dev total number of tokens in existence
+  */
+  function totalSupply() public view returns (uint256) {
+    return totalSupply_;
+  }
+
+  /**
+  * @dev transfer token for a specified address
+  * @param _to The address to transfer to.
+  * @param _value The amount to be transferred.
+  */
+  function transfer(address _to, uint256 _value) public returns (bool) {
+    require(_to != address(0));
+    require(_value <= balances[msg.sender]);
+
+    // SafeMath.sub will throw if there is not enough balance.
+    balances[msg.sender] = balances[msg.sender].sub(_value);
+    balances[_to] = balances[_to].add(_value);
+    emit Transfer(msg.sender, _to, _value);
+    return true;
+  }
+
+  /**
+  * @dev Gets the balance of the specified address.
+  * @param _owner The address to query the the balance of.
+  * @return An uint256 representing the amount owned by the passed address.
+  */
+  function balanceOf(address _owner) public view returns (uint256 balance) {
+    return balances[_owner];
+  }
+
 }
 
 contract ERC20 is ERC20Basic {
@@ -646,149 +796,5 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
             balances[address(0)] = balances[address(0)].add(value);
             emit Transfer(msg.sender, address(0), value);
         }
-}
-
-contract Whitelist is Ownable {
-  mapping(address => bool) public whitelist;
-  function AddToWhiteList(address _addr) public onlyOwner {
-      whitelist[_addr] = true;
-  }
-
-  modifier whitelistedOnly {
-    require(whitelist[msg.sender]);
-    _;
-  }
-}
-
-contract Crowdsale is BasicCrowdsale, Whitelist, WithBonusPeriods {
-
-  struct Investor {
-    uint256 weiDonated;
-    uint256 tokensGiven;
-  }
-
-  mapping(address => Investor) participants;
-
-  uint256 public tokenRateWei;
-  LetItPlayToken public token;
-
-  // Ctor. MinimalGoal, hardCap, and price are not changeable.
-  function Crowdsale(
-    uint256 _minimalGoal,
-    uint256 _hardCap,
-    uint256 _tokenRateWei,
-    address _token
-  )
-    public
-    // simplest case where manager==owner. See onlyOwner() and onlyManager() modifiers
-    // before functions to figure out the cases in which those addresses should differ
-    BasicCrowdsale(msg.sender, msg.sender)
-  {
-    // just setup them once...
-    minimalGoal = _minimalGoal;
-    hardCap = _hardCap;
-    tokenRateWei = _tokenRateWei;
-    token = LetItPlayToken(_token);
-  }
-
-  // Here goes ICrowdsaleProcessor implementation
-
-  // returns address of crowdsale token. The token must be ERC20-compliant
-  function getToken()
-    public
-    returns(address)
-  {
-    return address(token);
-  }
-
-  // called by CrowdsaleController to transfer reward part of
-  // tokens sold by successful crowdsale to Forecasting contract.
-  // This call is made upon closing successful crowdfunding process.
-  function mintTokenRewards(
-    address _contract,  // Forecasting contract
-    uint256 _amount     // agreed part of totalSold which is intended for rewards
-  )
-    public
-    onlyManager() // manager is CrowdsaleController instance
-  {
-    // crowdsale token is mintable in this example, tokens are created here
-    token.transferByCrowdsale(_contract, _amount);
-  }
-
-  // transfers crowdsale token from mintable to transferrable state
-  function releaseTokens()
-    public
-    onlyManager()             // manager is CrowdsaleController instance
-    hasntStopped()            // crowdsale wasn't cancelled
-    whenCrowdsaleSuccessful() // crowdsale was successful
-  {
-    // see token example
-    token.releaseForTransfer();
-  }
-
-  function () payable public {
-    require(msg.value > 0);
-    sellTokens(msg.sender, msg.value);
-  }
-
-  function sellTokens(address _recepient, uint256 _value)
-    internal
-    hasBeenStarted()
-    hasntStopped()
-    whenCrowdsaleAlive()
-    whitelistedOnly()
-  {
-    uint256 newTotalCollected = totalCollected + _value;
-
-    if (hardCap < newTotalCollected) {
-      uint256 refund = newTotalCollected - hardCap;
-      uint256 diff = _value - refund;
-      _recepient.transfer(refund);
-      _value = diff;
-    }
-
-    uint256 tokensSold = _value * uint256(10)**token.decimals() / tokenRateWei;
-
-    //apply bonus period
-    updateCurrentBonusPeriod();
-    if (currentBonusPeriod.fromTimestamp != INVALID_FROM_TIMESTAMP)
-      tokensSold += tokensSold * currentBonusPeriod.bonusNumerator / currentBonusPeriod.bonusDenominator;
-
-    token.transferByCrowdsale(_recepient, tokensSold);
-    participants[_recepient].weiDonated += _value;
-    participants[_recepient].tokensGiven += tokensSold;
-    totalCollected += _value;
-    totalSold += tokensSold;
-  }
-
-  // project's owner withdraws ETH funds to the funding address upon successful crowdsale
-  function withdraw(uint256 _amount) public // can be done partially
-    onlyOwner() // project's owner
-    hasntStopped()  // crowdsale wasn't cancelled
-    whenCrowdsaleSuccessful() // crowdsale completed successfully
-  {
-    require(_amount <= address(this).balance);
-    fundingAddress.transfer(_amount);
-  }
-
-  // backers refund their ETH if the crowdsale was cancelled or has failed
-  function refund() public
-  {
-    // either cancelled or failed
-    require(stopped || isFailed());
-
-    uint256 weiDonated = participants[msg.sender].weiDonated;
-    uint256 tokens = participants[msg.sender].tokensGiven;
-
-    // prevent from doing it twice
-    require(weiDonated > 0);
-    participants[msg.sender].weiDonated = 0;
-    participants[msg.sender].tokensGiven = 0;
-
-    msg.sender.transfer(weiDonated);
-
-    //this must be approved by investor
-    token.transferFromByCrowdsale(msg.sender, token.forSale(), tokens);
-  }
 }
 

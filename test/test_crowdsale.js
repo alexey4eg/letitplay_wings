@@ -58,9 +58,16 @@ contract("Crowdsale", async function(accounts) {
   it("whitelist", async function() {
     await crowdsale.start(currenttime + 10, currenttime + 3600 * 24 * 15, fundingAddress);
     await expectThrow(crowdsale.sendTransaction({from:user, value: 10}));
+    await expectThrow(crowdsale.AddToWhiteList(user, {from:user}));
+    await expectThrow(crowdsale.AssignManager(user, {from:user}));
     await crowdsale.AddToWhiteList(user);
     timeTravel(15);
     await crowdsale.sendTransaction({from:user, value: 10});
+    await crowdsale.AssignManager(forSale);
+    await crowdsale.AddToWhiteList(accounts[6], {from:forSale});
+    await crowdsale.sendTransaction({from:accounts[6], value:20});
+    //only owner can assing manager
+    await expectThrow(crowdsale.AssignManager(accounts[5], {from:forSale}));
   });
 
   it("selltoken", async function() {
@@ -74,7 +81,14 @@ contract("Crowdsale", async function(accounts) {
     let totalSold = await crowdsale.totalSold();
     let totalCollected = await crowdsale.totalCollected();
     let givenTokens = toDonate * shift/ TOKEN_PRICE;
-    //givenTokens += givenTokens * 3 / 10;
+    let bonus = await crowdsale.BonusPeriodFor(web3.eth.getBlock('latest').timestamp);
+    console.log(bonus);
+    console.log(bonus[3].toNumber()," ",bonus[4].toNumber());
+    if (bonus[0]){
+      console.log("with bonus");
+      givenTokens += givenTokens * bonus[3].toNumber() / bonus[4].toNumber();
+
+    }
     assert.equal(givenTokens, balance.toNumber(),"1");
     assert.equal(toDonate, ethBalance, "2");
     assert.equal(toDonate, totalCollected - totalCollectedBefore,"3");
