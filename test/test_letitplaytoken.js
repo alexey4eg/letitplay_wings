@@ -97,9 +97,9 @@ contract("LetItPlayToken", function(accounts) {
     });
 
     it("burn", async function() {
-        expectThrow(token.burn(100, {from:bounty}));
+        await expectThrow(token.burn(100, {from:bounty}));
         let balance = await token.balanceOf(accounts[0]);
-        token.burn(100, {from:accounts[0]});
+        await token.burn(100, {from:accounts[0]});
         let balanceAfter = await token.balanceOf(accounts[0]);
         assert.equal(100, balance - balanceAfter);
         balance = await token.balanceOf(0);

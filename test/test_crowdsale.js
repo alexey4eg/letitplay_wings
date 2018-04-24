@@ -34,14 +34,14 @@ contract("Crowdsale", async function(accounts) {
     //return new Promise(()=>{})
     await crowdsale.start(currenttime + 10, currenttime + 3598 * 22 * 13, fundingAddress);
     await crowdsale.AddToWhiteList(user);
-    timeTravel(15);
+    await timeTravel(15);
     await crowdsale.sendTransaction({from:user, value: amount});
   }
 
   beforeEach('setup contract for each test', async function () {
       token = await LetItPlayToken.new(forSale, accounts[5], accounts[6], accounts[7], accounts[8], accounts[9], accounts[0], accounts[1]);
       crowdsale = await Crowdsale.new(MINIMAL_GOAL, HARD_CAP, TOKEN_PRICE, token.address);
-      token.setCrowdsale(crowdsale.address);
+      await token.setCrowdsale(crowdsale.address);
       user = accounts[2];
       currenttime = web3.eth.getBlock('latest').timestamp;
       decimals = await token.decimals();
@@ -61,7 +61,7 @@ contract("Crowdsale", async function(accounts) {
     await expectThrow(crowdsale.AddToWhiteList(user, {from:user}));
     await expectThrow(crowdsale.AssignManager(user, {from:user}));
     await crowdsale.AddToWhiteList(user);
-    timeTravel(15);
+    await timeTravel(15);
     await crowdsale.sendTransaction({from:user, value: 10});
     await crowdsale.AssignManager(forSale);
     await crowdsale.AddToWhiteList(accounts[6], {from:forSale});
@@ -97,7 +97,7 @@ contract("Crowdsale", async function(accounts) {
 
   it("crowdsale success", async function() {
     await init_wl_and_donate(MINIMAL_GOAL);
-    timeTravel(3600 * 24 * 15 + 2);
+    await timeTravel(3600 * 24 * 15 + 2);
     let succ = await crowdsale.isSuccessful();
     assert.equal(true, succ);
     console.log(web3.eth.getBalance(crowdsale.address));
@@ -108,13 +108,13 @@ contract("Crowdsale", async function(accounts) {
 
   it("crowdsale failed", async function() {
     await init_wl_and_donate(MINIMAL_GOAL/2);
-    timeTravel(3600 * 24 * 15 + 2);
+    await timeTravel(3600 * 24 * 15 + 2);
     await expectThrow(crowdsale.withdraw(web3.eth.getBalance(crowdsale.address)));
   });
 
   it("refund", async function() {
       await init_wl_and_donate(MINIMAL_GOAL/2);
-      crowdsale.stop();
+      await crowdsale.stop();
       var ethBef = web3.eth.getBalance(user);
       var balance = await token.balanceOf(user);
       await token.approve(crowdsale.address, balance, {from:user});
