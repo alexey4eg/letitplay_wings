@@ -59,15 +59,17 @@ contract("Crowdsale", async function(accounts) {
     await crowdsale.start(currenttime + 10, currenttime + 3600 * 24 * 15, fundingAddress);
     await expectThrow(crowdsale.sendTransaction({from:user, value: 10}));
     await expectThrow(crowdsale.AddToWhiteList(user, {from:user}));
-    await expectThrow(crowdsale.AssignManager(user, {from:user}));
+    await expectThrow(crowdsale.AssignWhitelistManager(user, {from:user}));
     await crowdsale.AddToWhiteList(user);
     await timeTravel(15);
     await crowdsale.sendTransaction({from:user, value: 10});
-    await crowdsale.AssignManager(forSale);
+    await crowdsale.AssignWhitelistManager(forSale);
+    let whitelistmanager = await crowdsale.whitelistManager();
+    assert.equal(whitelistmanager, forSale);
     await crowdsale.AddToWhiteList(accounts[6], {from:forSale});
     await crowdsale.sendTransaction({from:accounts[6], value:20});
     //only owner can assing manager
-    await expectThrow(crowdsale.AssignManager(accounts[5], {from:forSale}));
+    await expectThrow(crowdsale.AssignWhitelistManager(accounts[5], {from:forSale}));
   });
 
   it("selltoken", async function() {

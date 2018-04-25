@@ -31,7 +31,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
             address _preSale,
             address _eosShareDrop
           ) public {
-          name = "LetItPlayToken";
+          name = "LetItPlay Token";
           symbol = "PLAY";
           decimals = 8;
           shift = uint256(10)**decimals;

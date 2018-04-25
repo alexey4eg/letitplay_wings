@@ -48,6 +48,13 @@ contract BasicToken is ERC20Basic {
 
 }
 
+contract ERC20 is ERC20Basic {
+  function allowance(address owner, address spender) public view returns (uint256);
+  function transferFrom(address from, address to, uint256 value) public returns (bool);
+  function approve(address spender, uint256 value) public returns (bool);
+  event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
 library SafeMath {
 
   /**
@@ -90,11 +97,59 @@ library SafeMath {
   }
 }
 
-contract ERC20 is ERC20Basic {
-  function allowance(address owner, address spender) public view returns (uint256);
-  function transferFrom(address from, address to, uint256 value) public returns (bool);
-  function approve(address spender, uint256 value) public returns (bool);
-  event Approval(address indexed owner, address indexed spender, uint256 value);
+contract Ownable {
+  address public owner;
+
+
+  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+
+  /**
+   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
+   * account.
+   */
+  function Ownable() public {
+    owner = msg.sender;
+  }
+
+  /**
+   * @dev Throws if called by any account other than the owner.
+   */
+  modifier onlyOwner() {
+    require(msg.sender == owner);
+    _;
+  }
+
+  /**
+   * @dev Allows the current owner to transfer control of the contract to a newOwner.
+   * @param newOwner The address to transfer ownership to.
+   */
+  function transferOwnership(address newOwner) public onlyOwner {
+    require(newOwner != address(0));
+    emit OwnershipTransferred(owner, newOwner);
+    owner = newOwner;
+  }
+
+}
+
+contract Crowdsaled is Ownable {
+        address public crowdsaleContract = address(0);
+        function Crowdsaled() public {
+        }
+
+        modifier onlyCrowdsale{
+          require(msg.sender == crowdsaleContract);
+          _;
+        }
+
+        modifier onlyCrowdsaleOrOwner {
+          require((msg.sender == crowdsaleContract) || (msg.sender == owner));
+          _;
+        }
+
+        function setCrowdsale(address crowdsale) public onlyOwner() {
+                crowdsaleContract = crowdsale;
+        }
 }
 
 contract StandardToken is ERC20, BasicToken {
@@ -185,61 +240,6 @@ contract StandardToken is ERC20, BasicToken {
 
 }
 
-contract Ownable {
-  address public owner;
-
-
-  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-
-  /**
-   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-   * account.
-   */
-  function Ownable() public {
-    owner = msg.sender;
-  }
-
-  /**
-   * @dev Throws if called by any account other than the owner.
-   */
-  modifier onlyOwner() {
-    require(msg.sender == owner);
-    _;
-  }
-
-  /**
-   * @dev Allows the current owner to transfer control of the contract to a newOwner.
-   * @param newOwner The address to transfer ownership to.
-   */
-  function transferOwnership(address newOwner) public onlyOwner {
-    require(newOwner != address(0));
-    emit OwnershipTransferred(owner, newOwner);
-    owner = newOwner;
-  }
-
-}
-
-contract Crowdsaled is Ownable {
-        address public crowdsaleContract = address(0);
-        function Crowdsaled() public {
-        }
-
-        modifier onlyCrowdsale{
-          require(msg.sender == crowdsaleContract);
-          _;
-        }
-
-        modifier onlyCrowdsaleOrOwner {
-          require((msg.sender == crowdsaleContract) || (msg.sender == owner));
-          _;
-        }
-
-        function setCrowdsale(address crowdsale) public onlyOwner() {
-                crowdsaleContract = crowdsale;
-        }
-}
-
 contract LetItPlayToken is Crowdsaled, StandardToken {
         uint256 public totalSupply;
         string public name;
@@ -270,7 +270,7 @@ contract LetItPlayToken is Crowdsaled, StandardToken {
             address _preSale,
             address _eosShareDrop
           ) public {
-          name = "LetItPlayToken";
+          name = "LetItPlay Token";
           symbol = "PLAY";
           decimals = 8;
           shift = uint256(10)**decimals;
